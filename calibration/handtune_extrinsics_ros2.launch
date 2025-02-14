@@ -1,0 +1,14 @@
+<launch>
+    <arg name="name" default="point_cloud" />
+    <!-- <arg name="load_gripper" default="true" /> -->
+    <node name="rviz" pkg="rviz2" type="rviz2" />
+
+    <!-- <node name="rviz" pkg="rviz2" type="rviz2" args="-d /home/albert/github/robopack/calibration/robo_cam_calibration.rviz" /> -->
+
+    <!-- First realsense2_camera launch -->
+    <include file="$(find realsense2_camera)/launch/rs_camera.launch">
+        <arg name="camera" value="cam_1" />
+        <arg name="serial_no" value="013422062309" />
+        <arg name="filters" value="pointcloud" />
+    </include>
+</launch>
