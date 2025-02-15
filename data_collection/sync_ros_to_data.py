@@ -32,15 +32,16 @@ class ImageSubscriberNode(Node):
         self.subscriber2_depth = Subscriber(self, Image, f'/camera/{camera_names[1]}/aligned_depth_to_color/image_raw')
         self.subscriber3_depth = Subscriber(self, Image, f'/camera/{camera_names[2]}/aligned_depth_to_color/image_raw')
 
-        self.subscriber1_points = Subscriber(self, PointCloud2, f'/camera/{camera_names[0]}/depth/color/points')
-        self.subscriber2_points = Subscriber(self, PointCloud2, f'/camera/{camera_names[1]}/depth/color/points')
-        self.subscriber3_points = Subscriber(self, PointCloud2, f'/camera/{camera_names[2]}/depth/color/points')
+        # self.subscriber1_points = Subscriber(self, PointCloud2, f'/camera/{camera_names[0]}/depth/color/points')
+        # self.subscriber2_points = Subscriber(self, PointCloud2, f'/camera/{camera_names[1]}/depth/color/points')
+        # self.subscriber3_points = Subscriber(self, PointCloud2, f'/camera/{camera_names[2]}/depth/color/points')
 
         self.synchronizer = ApproximateTimeSynchronizer(
             [self.subscriber1_rgb, self.subscriber2_rgb, self.subscriber3_rgb,
              self.subscriber1_depth, self.subscriber2_depth, self.subscriber3_depth,
-             self.subscriber1_points, self.subscriber2_points, self.subscriber3_points],
-            queue_size=30, slop=0.1)
+             # self.subscriber1_points, self.subscriber2_points, self.subscriber3_points
+             ],
+            queue_size=100, slop=0.1)
         self.synchronizer.registerCallback(self.callback)
 
     def rgb_msg_to_numpy(self, img):
@@ -49,7 +50,7 @@ class ImageSubscriberNode(Node):
     def depth_msg_to_numpy(self, dimg):
         return self.cv_bridge.imgmsg_to_cv2(dimg, desired_encoding='passthrough')
 
-    def callback(self, img1, img2, img3, dimg1, dimg2, dimg3, points1, points2, points3):
+    def callback(self, img1, img2, img3, dimg1, dimg2, dimg3):
         # Convert ROS images to OpenCV format
         cv_img1 = self.rgb_msg_to_numpy(img1)
         cv_img2 = self.rgb_msg_to_numpy(img2)
@@ -67,7 +68,7 @@ class ImageSubscriberNode(Node):
         self.save_images(cv_img2, depth_image2, self.camera_names[1])
         self.save_images(cv_img3, depth_image3, self.camera_names[2])
 
-        return points1, points2, points3
+        return cv_img1, cv_img2, cv_img3, depth_image1, depth_image2, depth_image3
 
     def save_images(self, color_image, depth_image, camera_name, timestamp_ms=None):
         # Get current counter and pad the number to 6 digits
@@ -93,7 +94,7 @@ class ImageSubscriberNode(Node):
 def main(args=None):
     if args is None:
         args = sys.argv
-    save_dir = '/home/coolbot/data/hand_object_perception/train/hand_object_ros_13'
+    save_dir = '/home/coolbot/data/hand_object_perception/train/scene_0001'
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     rclpy.init(args=args)
@@ -101,6 +102,22 @@ def main(args=None):
     rclpy.spin(node)
     rclpy.shutdown()
 
+
+def main(args=None):
+    if args is None:
+        args = sys.argv
+    
+    if len(args) < 2:
+        print("Usage: python3 image_extraction_script.py <save_directory>")
+        return
+    
+    save_dir = args[1]  # Get save directory from command-line arguments
+    os.makedirs(save_dir, exist_ok=True)
+    
+    rclpy.init(args=args)
+    node = ImageSubscriberNode(camera_names=['cam_0', 'cam_1', 'cam_3'], save_dir=save_dir)
+    rclpy.spin(node)
+    rclpy.shutdown()
 
 if __name__ == '__main__':
     main()

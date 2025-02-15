@@ -190,6 +190,20 @@ def preprocess_raw_pcd(pcd_all, rm_stats_outliers=2, visualize=False):
 
     return cube, rest
 
+# def check_if_close(cube, tool_list):
+#     cube_hull, _ = cube.compute_convex_hull()
+#     f = SDF(cube_hull.vertices, cube_hull.triangles)
+    
+#     # a sparse pass
+#     for _, tool_surface in tool_list:
+#         tool_surface_sparse = tool_surface.voxel_down_sample(voxel_size=0.01)
+#         sdf = f(np.asarray(tool_surface_sparse.points))
+#         n_points_close = np.sum(sdf > 0)
+#         if n_points_close > 0:
+#             return True
+
+#     return False
+
 # @profile
 def sample(pcd, pcd_dense_prev, pcd_sparse_prev, hand_verts, hand_faces, is_moving_back, patch=False, visualize=False):
     if pcd_dense_prev is not None and is_moving_back: 

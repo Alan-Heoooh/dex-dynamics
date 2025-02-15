@@ -12,7 +12,7 @@ import readchar
 
 fixed_frame = 'marker'
 # num_cams = 2
-tune_idx = [0]  # set the index of the camera to tune
+tune_idx = [1]  # set the index of the camera to tune
 
 data_dir = '/home/coolbot/Documents/git/dex-dynamics/calibration'
 with open(os.path.join(data_dir, '3cameras_link_1.yml'), 'r') as f:
@@ -20,7 +20,7 @@ with open(os.path.join(data_dir, '3cameras_link_1.yml'), 'r') as f:
 path_to_save = os.path.join(data_dir, '3cameras_link_1.yml')
 
 # step side for adjusting
-pos_stride = 0.02 / 10
+pos_stride = 0.02 / 40
 rot_stride = 0.02 / 10
 
 

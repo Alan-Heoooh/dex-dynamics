@@ -9,7 +9,7 @@ from transforms3d.quaternions import mat2quat, quat2mat
 TAG_SIZE = 0.172  
 
 # Specify RealSense Camera Serial Number (Set this if multiple cameras are connected)
-CAMERA_SERIAL_NUMBER = "102122060842"  # Replace with your camera's serial number
+CAMERA_SERIAL_NUMBER = "102422074156"  # Replace with your camera's serial number
 if CAMERA_SERIAL_NUMBER == "102422074156":
     camera_sn = "cam_0"
 elif CAMERA_SERIAL_NUMBER == "337322071340":

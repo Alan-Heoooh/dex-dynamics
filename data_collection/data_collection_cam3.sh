@@ -26,7 +26,7 @@ fi
 # e.g. usb_port_id:=2-2.4
 CAMERA_PARAMS="camera_name:=$CAMERA_NAME serial_number:=$SERIAL_NUMBER usb_port_id:=$USB_PORT"
 GENERAL_PARAMS="align_depth.enable:=true"
-DEPTH_PARAMS="rgb_camera.color_profile:=1280x720x15 depth_module.depth_profile:=1280x720x15 depth_module.infra_profile:=1280x720x15 depth_module.enable_auto_exposure.1:=false filters:=temporal pointcloud.enable:=true"
+DEPTH_PARAMS="rgb_camera.color_profile:=1280x720x15 depth_module.depth_profile:=1280x720x15 depth_module.infra_profile:=1280x720x15 depth_module.enable_auto_exposure.1:=false filters:=temporal pointcloud.enable:=false"
 
 
 echo "Using parameters: " $CAMERA_PARAMS $GENERAL_PARAMS $DEPTH_PARAMS
