@@ -12,7 +12,10 @@ EXTRACTION_SCRIPT = "/home/coolbot/Documents/git/dex-dynamics/data_collection/sy
 #     "/home/coolbot/data/hand_object_perception/ros_record/scene_0002/scene_0002_0.db3",
 # ]
 
-BAG_FILES = [f"/home/coolbot/data/hand_object_perception/ros_record/scene_{i:04d}/scene_{i:04d}_0.db3" for i in range(1, 26)]
+start_idx= 100
+end_idx = 109
+
+BAG_FILES = [f"/home/coolbot/data/hand_object_perception/ros/scene_{i:04d}/scene_{i:04d}_0.db3" for i in range(start_idx, end_idx+1)]
 
 # Base directory for saving images
 BASE_SAVE_DIR = "/home/coolbot/data/hand_object_perception/train"

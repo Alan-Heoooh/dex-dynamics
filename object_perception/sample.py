@@ -14,9 +14,9 @@ from utils.visualize import *
 camera_list = ['cam_0', 'cam_1', 'cam_3']
 data_path = '/home/coolbot/data'
 calib_path = '/home/coolbot/data/calib'
-object_path = '/home/coolbot/data/hand_object_perception/train/hand_object_ros_12'
+object_path = '/home/coolbot/data/hand_object_perception/train/scene_0101_0'
 
-hand_ret_path = os.path.join(data_path, 'ret_dict')
+hand_ret_path = '/home/coolbot/data/hand_obj_ret/new/hand_obj_ret_0101.npy'
 
 
 n_particles = 300
@@ -219,11 +219,11 @@ def sample(pcd, pcd_dense_prev, pcd_sparse_prev, hand_verts, hand_faces, is_movi
     cube_colors = np.asarray(cube.colors)
     color_avg = list(np.mean(cube_colors, axis=0))
 
-    # construct hand mesh
-    hand_mesh = o3d.geometry.TriangleMesh()
-    hand_mesh.vertices = o3d.utility.Vector3dVector(hand_verts)
-    hand_mesh.triangles = o3d.utility.Vector3iVector(hand_faces)
     if visualize:
+        # construct hand mesh
+        hand_mesh = o3d.geometry.TriangleMesh()
+        hand_mesh.vertices = o3d.utility.Vector3dVector(hand_verts)
+        hand_mesh.triangles = o3d.utility.Vector3iVector(hand_faces)
         visualize_o3d([hand_mesh], title='hand_mesh')
     
     ##### 1. random sample 100x points in the bounding box #####
@@ -315,7 +315,8 @@ def sample(pcd, pcd_dense_prev, pcd_sparse_prev, hand_verts, hand_faces, is_movi
 
 
 def load_hand_mesh(hand_ret_path, scene_id):
-    hand_ret = np.load(os.path.join(hand_ret_path, 'ret_dict_{}.npy'.format(scene_id - 30)), allow_pickle=True).item()
+    hand_ret_list = np.load(hand_ret_path, allow_pickle=True)
+    hand_ret = hand_ret_list[scene_id]
     hand_verts = hand_ret['verts'][0]
     hand_faces = hand_ret['hand_faces'][0]
 
@@ -329,10 +330,9 @@ def main(pcd_dense_prev=None, pcd_sparse_prev=None):
 
     # Step 1: Get point cloud from each camera, project to marker frame, and filter.
     
-    # scene_id = 35
-    for scene_id in range(31, 41):
+    for scene_id in range(100, 101):
         pcd = merge_point_clouds(scene_id=scene_id)
-        visualize = False
+        visualize = True
         is_moving_back = False
 
         if visualize:
@@ -343,14 +343,14 @@ def main(pcd_dense_prev=None, pcd_sparse_prev=None):
         pcd_dense, pcd_sparse = sample(pcd, pcd_dense_prev, pcd_sparse_prev, hand_verts, hand_faces,
             is_moving_back, patch=False, visualize=visualize)
         
-        ret_dict = np.load(os.path.join(hand_ret_path, 'ret_dict_{}.npy'.format(scene_id- 30)), allow_pickle=True).item()
+        # ret_dict = np.load(os.path.join(hand_ret_path, 'ret_dict_{}.npy'.format(scene_id- 30)), allow_pickle=True).item()
 
-        ret_dict['pcd_dense'] = np.asarray(pcd_dense.points)
-        ret_dict['pcd_sparse'] = np.asarray(pcd_sparse.points)
+        # ret_dict['pcd_dense'] = np.asarray(pcd_dense.points)
+        # ret_dict['pcd_sparse'] = np.asarray(pcd_sparse.points)
         
-        # Save the results
-        np.save(os.path.join(hand_ret_path, 'ret_dict_new_{}.npy'.format(scene_id - 30 )), ret_dict)
-        print(f"Saved results for scene {scene_id}")
+        # # Save the results
+        # np.save(os.path.join(hand_ret_path, 'ret_dict_new_{}.npy'.format(scene_id - 30 )), ret_dict)
+        # print(f"Saved results for scene {scene_id}")
 
 
 
