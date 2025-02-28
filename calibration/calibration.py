@@ -53,11 +53,6 @@ transformation_history = []
 
 def convert_to_ros_coordinates(T_cam):
     """Convert the camera's position and rotation to ROS camera_link convention."""
-    # optical_to_ros = np.array([
-    #     [0.0, 0.0, 1.0, 0.0],
-    #     [-1.0, 0.0, 0.0, 0.0],
-    #     [0.0, -1.0, 0.0, 0.0],
-    #     [0.0, 0.0, 0.0, 1.0],])
 
     color_frame_to_link = np.array(transformation_data[f'{camera_sn}_color_frame_to_{camera_sn}_link']['transformation'])
     color_optical_to_color_frame = np.array(transformation_data[f'{camera_sn}_color_optical_frame_to_{camera_sn}_color_frame']['transformation'])
@@ -65,6 +60,7 @@ def convert_to_ros_coordinates(T_cam):
     T_link = color_frame_to_link @ color_optical_to_color_frame @ T_cam    
 
     return T_link
+
 
 try:
     while True:
@@ -99,9 +95,6 @@ try:
             # Compute camera extrinsics (inverse transformation)
             # R_cam, t_cam = invert_pose(R_tag, t_tag)
             R_ros, t_ros = invert_pose(R_tag_ros, t_tag_ros)
-
-            # Convert to ROS coordinates
-            # t_ros, R_ros = convert_to_ros_coordinates(t_cam, R_cam)
 
             # Store transformation matrix
             transformation_matrix = np.eye(4)

@@ -11,12 +11,11 @@ from projector_np import Projector
 from pcd_utils import *
 from utils.visualize import *
 
-camera_list = ['cam_0', 'cam_1', 'cam_3']
-data_path = '/home/coolbot/data'
-calib_path = '/home/coolbot/data/calib'
-object_path = '/home/coolbot/data/hand_object_perception/train/scene_0101_0'
 
-hand_ret_path = '/home/coolbot/data/hand_obj_ret/new/hand_obj_ret_0101.npy'
+calib_path = '/home/coolbot/data/calib'
+# object_path = '/home/coolbot/data/hand_object_perception/train/scene_0101_0'
+
+# hand_ret_path = '/home/coolbot/data/hand_obj_ret/new/hand_obj_ret_0101.npy'
 
 
 n_particles = 300
@@ -72,7 +71,7 @@ def filter_point_cloud(pcd):
 
     return pcd
 
-def merge_point_clouds(scene_id):
+def merge_point_clouds(frame_id, camera_list, object_path):
     projector = Projector(calib_path=calib_path)
     pcd_all_list = []
     for camera_sn in camera_list:
@@ -82,8 +81,8 @@ def merge_point_clouds(scene_id):
         color_image_files = sorted(os.listdir(color_image_path))
         depth_image_files = sorted(os.listdir(depth_image_path))
 
-        color = np.array(Image.open(f'{color_image_path}/{color_image_files[scene_id]}'))
-        depth = np.array(Image.open(f'{depth_image_path}/{depth_image_files[scene_id]}'))
+        color = np.array(Image.open(f'{color_image_path}/{color_image_files[frame_id]}'))
+        depth = np.array(Image.open(f'{depth_image_path}/{depth_image_files[frame_id]}'))
 
         intrinsics = projector.intrinsics[camera_sn]
 
@@ -205,7 +204,7 @@ def preprocess_raw_pcd(pcd_all, rm_stats_outliers=2, visualize=False):
 #     return False
 
 # @profile
-def sample(pcd, pcd_dense_prev, pcd_sparse_prev, hand_verts, hand_faces, is_moving_back, patch=False, visualize=False):
+def sample(pcd, pcd_dense_prev, pcd_sparse_prev, hand_mesh, is_moving_back, patch=False, visualize=False):
     if pcd_dense_prev is not None and is_moving_back: 
         return pcd_dense_prev, pcd_sparse_prev
     
@@ -221,9 +220,10 @@ def sample(pcd, pcd_dense_prev, pcd_sparse_prev, hand_verts, hand_faces, is_movi
 
     if visualize:
         # construct hand mesh
-        hand_mesh = o3d.geometry.TriangleMesh()
-        hand_mesh.vertices = o3d.utility.Vector3dVector(hand_verts)
-        hand_mesh.triangles = o3d.utility.Vector3iVector(hand_faces)
+        # hand_mesh = o3d.geometry.TriangleMesh()
+        # hand_mesh.vertices = o3d.utility.Vector3dVector(hand_verts)
+        # hand_pcd = o3d.geometry.PointCloud()
+        # hand_pcd.points = o3d.utility.Vector3dVector(hand_verts)
         visualize_o3d([hand_mesh], title='hand_mesh')
     
     ##### 1. random sample 100x points in the bounding box #####
@@ -314,43 +314,78 @@ def sample(pcd, pcd_dense_prev, pcd_sparse_prev, hand_verts, hand_faces, is_movi
     return sampled_pcd, selected_pcd
 
 
-def load_hand_mesh(hand_ret_path, scene_id):
-    hand_ret_list = np.load(hand_ret_path, allow_pickle=True)
-    hand_ret = hand_ret_list[scene_id]
-    hand_verts = hand_ret['verts'][0]
-    hand_faces = hand_ret['hand_faces'][0]
+def load_hand_mesh(hand_ret, frame_id):
+    hand_verts = hand_ret['pred_verts_3d'][0]
+    # hand_faces = hand_ret['hand_faces'][0]
+    hand_faces = np.load('/home/coolbot/Documents/git/dex-dynamics/mano_faces.npy', allow_pickle=True)
 
     # change to numpy array
-    hand_verts = np.array(hand_verts)
+    hand_verts = np.array(hand_verts).astype(np.float32)
+    projector = Projector(calib_path=calib_path)
+    hand_verts = projector.project_point_cloud_to_marker(hand_verts, 'cam_0')
     hand_faces = np.array(hand_faces)
-    return hand_verts, hand_faces
 
+    hand_mesh = o3d.geometry.TriangleMesh()
+    hand_mesh.vertices = o3d.utility.Vector3dVector(hand_verts)
+    hand_mesh.triangles = o3d.utility.Vector3iVector(hand_faces)
+
+    return hand_mesh
+
+BAD_SCENE = [2, 3, 4, 5, 6, 7,]
 
 def main(pcd_dense_prev=None, pcd_sparse_prev=None):
-
+    camera_list = ['cam_0', 'cam_1', 'cam_2', 'cam_3']
+    data_path = '/home/coolbot/data/hand_object_perception'
+    train_dir = os.path.join(data_path, 'train_4cameras')
+    visualize = True
+    is_moving_back = False
     # Step 1: Get point cloud from each camera, project to marker frame, and filter.
+
+    with open('/home/coolbot/Documents/git/dex-dynamics/object_perception/hand_perception_label.yaml' , 'r') as f:
+        hand_perception_label = yaml.load(f, Loader=yaml.FullLoader)
     
-    for scene_id in range(100, 101):
-        pcd = merge_point_clouds(scene_id=scene_id)
-        visualize = True
-        is_moving_back = False
-
-        if visualize:
-            visualize_o3d([pcd], title='merged_point_cloud')
-
-        hand_verts, hand_faces = load_hand_mesh(hand_ret_path, scene_id=scene_id)
-
-        pcd_dense, pcd_sparse = sample(pcd, pcd_dense_prev, pcd_sparse_prev, hand_verts, hand_faces,
-            is_moving_back, patch=False, visualize=visualize)
+    for scene_dir in sorted(os.listdir(train_dir)):
+        scene_path = os.path.join(train_dir, scene_dir)
+        scene_len = len(os.listdir(os.path.join(scene_path, 'cam_0', 'color')))
+        scene_idx = int(scene_dir[6:10])
         
-        # ret_dict = np.load(os.path.join(hand_ret_path, 'ret_dict_{}.npy'.format(scene_id- 30)), allow_pickle=True).item()
+        if scene_idx in BAD_SCENE:
+            continue
 
-        # ret_dict['pcd_dense'] = np.asarray(pcd_dense.points)
-        # ret_dict['pcd_sparse'] = np.asarray(pcd_sparse.points)
-        
-        # # Save the results
-        # np.save(os.path.join(hand_ret_path, 'ret_dict_new_{}.npy'.format(scene_id - 30 )), ret_dict)
-        # print(f"Saved results for scene {scene_id}")
+        if scene_idx <= 31:
+            continue
+
+        object_idx_list = [3, scene_len-1]
+        hand_idx_list = hand_perception_label["hand_idx"][scene_idx]
+
+        hand_ret_path = os.path.join(data_path, 'pred', f'pred_scene_{scene_idx:04d}.npy')
+        hand_ret_list = np.load(hand_ret_path, allow_pickle=True)
+
+        hand_obj_ret = {}
+
+        for object_idx, hand_idx in zip(object_idx_list, hand_idx_list):
+            pcd = merge_point_clouds(frame_id=object_idx, camera_list=camera_list, object_path=scene_path)
+            
+            if visualize:
+                visualize_o3d([pcd], title='merged_point_cloud')
+            
+            hand_ret = hand_ret_list[hand_idx]
+
+            hand_mesh = load_hand_mesh(hand_ret, frame_id=hand_idx)
+
+            pcd_dense, pcd_sparse = sample(pcd, pcd_dense_prev, pcd_sparse_prev, hand_mesh,
+                is_moving_back, patch=False, visualize=visualize)
+
+            if object_idx == object_idx_list[0]:
+                hand_obj_ret['object_init_pcd'] = np.asarray(pcd_sparse.points)
+                hand_obj_ret['hand_init_pcd'] = np.asarray(hand_mesh.vertices)
+            else:
+                hand_obj_ret['object_final_pcd'] = np.asarray(pcd_sparse.points)
+                hand_obj_ret['hand_final_pcd'] = np.asarray(hand_mesh.vertices)
+
+                # Step 2: Save the point cloud data to a file.
+                np.save(f'/home/coolbot/data/hand_obj_ret/hand_obj_ret_{scene_idx:04d}.npy', hand_obj_ret)
+                print(f'Saved hand object ret for scene {scene_idx}.')
 
 
 

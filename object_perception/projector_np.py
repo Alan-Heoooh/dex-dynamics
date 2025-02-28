@@ -17,21 +17,12 @@ class Projector:
         self.intrinsics['cam_1'] = np.array([[912.91558838,   0.        , 661.25982666,   0.        ],
                                     [  0.        , 912.52545166, 373.5128479 ,   0.        ],
                                     [  0.        ,   0.        ,   1.        ,   0.        ]])
+        self.intrinsics['cam_2'] = np.array([[916.56665039,   0.        , 648.18109131,   0.        ],
+                                            [  0.        , 916.77130127, 358.43869019,   0.        ],
+                                            [  0.        ,   0.        ,   1.        ,   0.        ]])
         self.intrinsics['cam_3'] = np.array([[910.8637085 ,   0.        , 619.1239624 ,   0.        ],
                                     [  0.        , 910.2946167 , 351.13458252,   0.        ],
                                     [  0.        ,   0.        ,   1.        ,   0.        ]])
-
-        # Transformation from ROS frame to optical frame
-        self.ros_to_optical = np.array(
-            [
-                [-0., -1., -0., -0.],
-                [-0., -0., -1., -0.],
-                [ 1.,  0.,  0.,  0.],
-                [ 0.,  0.,  0.,  1.]
-            ],
-            dtype=np.float64,
-        )
-        self.optical_to_ros = np.linalg.inv(self.ros_to_optical)
 
         # Store transformations from marker frame to camera frame (optical and ROS)
         self.marker_to_color_optical = {}

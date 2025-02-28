@@ -1,13 +1,11 @@
 #!/bin/bash
 
-SERIAL_NUMBER=${SERIAL_NUMBER:-"233722072188"}              # Connect to the camera with serial number
+SERIAL_NUMBER=${SERIAL_NUMBER:-"013422062309"}              # Connect to the camera with serial number
 EXIT_IF_CAMERA_NOT_FOUND=${EXIT_IF_CAMERA_NOT_FOUND:-true} # true: exit if not found; false: keep running if not found
 CAMERA_NAME=${CAMERA_NAME:-"cam_2"}                      # Set the ROS2 topic name
-USB_PORT=${USB_PORT:-4-1.1}         # USB port, found in realsense-viewer
+USB_PORT=${USB_PORT:-4-1}         # USB port, found in realsense-viewer
 # /sys/devices/pci0000:00/0000:00:1c.4/0000:06:00.0/usb4/4-1/4-1:1.0/video4linux/video0
-# /sys/devices/pci0000:00/0000:00:14.0/usb4/4-1/4-1.3/4-1.3:1.0/video4linux/video8
-# /sys/devices/pci0000:00/0000:00:0d.0/usb2/2-1/2-1.4/2-1.4.4/2-1.4.4:1.0/video4linux/video20
-# /sys/devices/pci0000:00/0000:00:14.0/usb4/4-1/4-1.1/4-1.1:1.0/video4linux/video20
+# /sys/devices/pci0000:00/0000:00:14.0/usb4/4-1/4-1:1.0/video4linux/video2
 die (){
   echo "$@" 1>&2
   exit 1

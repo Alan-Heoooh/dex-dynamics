@@ -4,101 +4,95 @@ import torch
 import yaml
 import open3d as o3d
 import trimesh
+from object_perception.projector_np import Projector
 
-# file = '/home/coolbot/data/hand_obj_ret/new/hand_obj_post_processing_ret_0101.npy'
+root_dir = '/home/coolbot/data'
+camera_sn_list = ['cam_0', 'cam_1', 'cam_3']
+calib_dir = os.path.join(root_dir, 'calib')
+# train_dir = os.path.join(root_dir, 'train')
 
-# data = np.load(file, allow_pickle=True).item()
-# object_init = data['object_init_pcd']
-# object_final = data['object_final_pcd']
-# hand_init = data['hand_init_pcd'][0]
-# hand_final = data['hand_final_pcd'][0]
-
-# hand_init = np.array(hand_init)
-# hand_final = np.array(hand_final)
-
-# object_init_pcd = o3d.geometry.PointCloud()
-# object_init_pcd.points = o3d.utility.Vector3dVector(object_init)
-# # object_init_pcd.paint_uniform_color([0.1, 0.1, 0.7])
-# # purple
-# object_init_pcd.paint_uniform_color([1, 0, 1])
-# object_final_pcd = o3d.geometry.PointCloud()
-# object_final_pcd.points = o3d.utility.Vector3dVector(object_final)
-# object_final_pcd.paint_uniform_color([0.1, 0.1, 0.7])
-# hand_init_pcd = o3d.geometry.PointCloud()
-# hand_init_pcd.points = o3d.utility.Vector3dVector(hand_init)
-# # hand_init_pcd.paint_uniform_color([0.1, 0.7, 0.1])
-# # red
-# hand_init_pcd.paint_uniform_color([1, 0, 0])
-# hand_final_pcd = o3d.geometry.PointCloud()
-# hand_final_pcd.points = o3d.utility.Vector3dVector(hand_final)
-# hand_final_pcd.paint_uniform_color([0.1, 0.7, 0.1])
-
-# axis = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.01, origin=[0, 0, 0])
-
-# o3d.visualization.draw_geometries([object_init_pcd, hand_init_pcd, axis])
-
-# o3d.visualization.draw_geometries([object_init_pcd, object_final_pcd, axis])
-
-camera_sn = 'cam_0'
-
-scene_file = '/home/coolbot/data/hand_object_perception/train/scene_0101_0'
-ret_file = '/home/coolbot/data/exps/scene_0101_0'
-camera_wilor_file = os.path.join(ret_file, f'{camera_sn}_wilor_data.pt')
-
-camera_wilor_data = torch.load(camera_wilor_file)
-
-camera_dir = os.path.join(scene_file, camera_sn)
-
-camera_color_dir = os.path.join(camera_dir, 'color')
-camera_depth_dir = os.path.join(camera_dir, 'depth')
-
-camera_wilor = os.path.join(scene_file, f'{camera_sn}_wilor')
-
-camera_color_files = sorted(os.listdir(camera_color_dir))
-camera_depth_files = sorted(os.listdir(camera_depth_dir))
+projector = Projector(calib_dir)
 
 intrinsics = {}
 intrinsics['cam_0'] = np.array([[909.22192383,   0.        , 634.7142334 ,   0.        ],
-                                    [  0.        , 909.41491699, 352.74398804,   0.        ],
-                                    [  0.        ,   0.        ,   1.        ,   0.        ]])
+                                            [  0.        , 909.41491699, 352.74398804,   0.        ],
+                                            [  0.        ,   0.        ,   1.        ,   0.        ]]).astype(np.float32)
 intrinsics['cam_1'] = np.array([[912.91558838,   0.        , 661.25982666,   0.        ],
                             [  0.        , 912.52545166, 373.5128479 ,   0.        ],
-                            [  0.        ,   0.        ,   1.        ,   0.        ]])
+                            [  0.        ,   0.        ,   1.        ,   0.        ]]).astype(np.float32)
+# ERROR
+intrinsics['cam_2'] = np.array([[611.04443359, 0.0, 325.45407104, 0.],
+                                            [0.0, 611.1809082, 238.9591217, 0.],
+                                            [0.0, 0.0, 1.0, 0.]]).astype(np.float32)
 intrinsics['cam_3'] = np.array([[910.8637085 ,   0.        , 619.1239624 ,   0.        ],
                             [  0.        , 910.2946167 , 351.13458252,   0.        ],
-                            [  0.        ,   0.        ,   1.        ,   0.        ]])
+                            [  0.        ,   0.        ,   1.        ,   0.        ]]).astype(np.float32)
 
-for scene_id in range(0, len(camera_color_files), 5):
-    color_file = os.path.join(camera_color_dir, camera_color_files[scene_id])
-    depth_file = os.path.join(camera_depth_dir, camera_depth_files[scene_id])
-    wilor_file = os.path.join(camera_wilor, camera_color_files[scene_id].replace('.png', '_0.obj'))
+data_dir = os.path.join(root_dir, 'hand_object_perception')
 
-    color = o3d.io.read_image(color_file)
-    depth = o3d.io.read_image(depth_file)
-    # wilor = o3d.io.read_triangle_mesh(wilor_file)
-    # hand_mesh = trimesh.load(wilor_file)
-    # # hand_mesh = o3d.geometry.TriangleMesh.create_from_trimesh(hand_mesh)
+pred_file = os.path.join(data_dir, 'pred_wo_cam2')
+train_dir = os.path.join(data_dir, 'train_4cameras')
 
+# data_dir = root_dir
 
-    # hand_mesh_o3d = o3d.geometry.TriangleMesh()
-    # hand_mesh_o3d.vertices = o3d.utility.Vector3dVector(hand_mesh.vertices)
-    # hand_mesh_o3d.triangles = o3d.utility.Vector3iVector(hand_mesh.faces)
+# pred_file = os.path.join(data_dir, 'pred')
+# train_dir = os.path.join(data_dir, 'train')
 
-    verts = camera_wilor_data['verts'][scene_id][0]
+scene_id = 0
 
-    verts = np.array(verts)
+pred_data = np.load(os.path.join(pred_file, f'pred_scene_{scene_id:04d}.npy'), allow_pickle=True)
+scene_len = len(pred_data)
+scene_dir = os.path.join(train_dir, f'scene_{scene_id:04d}_0')
+
+# camera_sn = 'cam_0'
+master_camera_sn = 'cam_0'
+# intrinsics = intrinsics[camera_sn]
+
+for i in range(0, scene_len, 5):
+    cloud_marker_all = o3d.geometry.PointCloud()
+    for camera_sn in camera_sn_list:
+
+        color_file = os.path.join(scene_dir, camera_sn, 'color', f'color_{i:06d}.png')
+        depth_file = os.path.join(scene_dir, camera_sn, 'depth', f'depth_{i:06d}.png')
+
+        color = o3d.io.read_image(color_file)
+        depth = o3d.io.read_image(depth_file)
+
+        rgbd = o3d.geometry.RGBDImage.create_from_color_and_depth(color, depth, depth_scale=1000.0, depth_trunc=1.0, convert_rgb_to_intensity=False)
+        
+        cam_intrinsics = intrinsics[camera_sn]
+        camera_intrinsic = o3d.camera.PinholeCameraIntrinsic(1280, 720, cam_intrinsics[0, 0], cam_intrinsics[1, 1], cam_intrinsics[0, 2], cam_intrinsics[1, 2])
+
+        cloud = o3d.geometry.PointCloud.create_from_rgbd_image(rgbd, camera_intrinsic)
+
+        cloud_points = np.array(cloud.points)
+        cloud_colors = np.array(cloud.colors)
+
+        cloud_marker_points = projector.project_point_cloud_to_marker(cloud_points, camera_sn)
+        cloud_marker = o3d.geometry.PointCloud()
+        cloud_marker.points = o3d.utility.Vector3dVector(cloud_marker_points)
+        cloud_marker.colors = o3d.utility.Vector3dVector(cloud_colors)
+        cloud_marker_all += cloud_marker
+
+    # pred data
+    data = pred_data[i]
+    pred_joints_3d = np.array(data['pred_joints_3d']).astype(np.float32)
+    pred_verts_3d = np.array(data['pred_verts_3d']).astype(np.float32)
+    pred_ref_joints_3d = np.array(data['pred_ref_joints_3d']).astype(np.float32)
+
+    j3d_pcd = o3d.geometry.PointCloud()
+    j3d_pcd.points = o3d.utility.Vector3dVector(pred_joints_3d[0])
     verts_pcd = o3d.geometry.PointCloud()
-    verts_pcd.points = o3d.utility.Vector3dVector(verts)
-    verts_pcd.paint_uniform_color([0.1, 0.1, 0.7])
+    verts_pcd.points = o3d.utility.Vector3dVector(pred_verts_3d[0])
+    # ref_j3d_pcd = o3d.geometry.PointCloud()
+    # ref_j3d_pcd.points = o3d.utility.Vector3dVector(pred_ref_joints_3d[0])
+    # ref_j3d_pcd.paint_uniform_color([0.0, 0.0, 1.0])
 
-    rgbd_image = o3d.geometry.RGBDImage.create_from_color_and_depth(color, depth, depth_scale=1000.0, depth_trunc=1.0, convert_rgb_to_intensity=False)
+    verts_marker_points = projector.project_point_cloud_to_marker(pred_verts_3d[0],  master_camera_sn)
+    verts_marker = o3d.geometry.PointCloud()
+    verts_marker.points = o3d.utility.Vector3dVector(verts_marker_points)
+    verts_marker.paint_uniform_color([1.0, 0.0, 0.0])
 
-    fx, fy, cx, cy = intrinsics[camera_sn][0, 0], intrinsics[camera_sn][1, 1], intrinsics[camera_sn][0, 2], intrinsics[camera_sn][1, 2]
-    pcd = o3d.geometry.PointCloud.create_from_rgbd_image(rgbd_image, o3d.camera.PinholeCameraIntrinsic(1280, 720, fx, fy, cx, cy))
-    
     axis = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.1, origin=[0, 0, 0])
 
-
-    o3d.visualization.draw_geometries([pcd, verts_pcd, axis])
-
-    # import pdb; pdb.set_trace()
+    o3d.visualization.draw_geometries([ axis, cloud_marker_all, verts_marker])
