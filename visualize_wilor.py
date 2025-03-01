@@ -21,16 +21,16 @@ intrinsics['cam_1'] = np.array([[912.91558838,   0.        , 661.25982666,   0. 
                             [  0.        , 912.52545166, 373.5128479 ,   0.        ],
                             [  0.        ,   0.        ,   1.        ,   0.        ]]).astype(np.float32)
 # ERROR
-intrinsics['cam_2'] = np.array([[611.04443359, 0.0, 325.45407104, 0.],
-                                            [0.0, 611.1809082, 238.9591217, 0.],
-                                            [0.0, 0.0, 1.0, 0.]]).astype(np.float32)
+intrinsics['cam_2'] = np.array([[916.56665039,   0.        , 648.18109131,   0.        ],
+                                            [  0.        , 916.77130127, 358.43869019,   0.        ],
+                                            [  0.        ,   0.        ,   1.        ,   0.        ]])
 intrinsics['cam_3'] = np.array([[910.8637085 ,   0.        , 619.1239624 ,   0.        ],
                             [  0.        , 910.2946167 , 351.13458252,   0.        ],
                             [  0.        ,   0.        ,   1.        ,   0.        ]]).astype(np.float32)
 
 data_dir = os.path.join(root_dir, 'hand_object_perception')
 
-pred_file = os.path.join(data_dir, 'pred_wo_cam2')
+pred_file = os.path.join(data_dir, 'pred')
 train_dir = os.path.join(data_dir, 'train_4cameras')
 
 # data_dir = root_dir
@@ -38,7 +38,7 @@ train_dir = os.path.join(data_dir, 'train_4cameras')
 # pred_file = os.path.join(data_dir, 'pred')
 # train_dir = os.path.join(data_dir, 'train')
 
-scene_id = 0
+scene_id = 20
 
 pred_data = np.load(os.path.join(pred_file, f'pred_scene_{scene_id:04d}.npy'), allow_pickle=True)
 scene_len = len(pred_data)

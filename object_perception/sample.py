@@ -203,6 +203,33 @@ def preprocess_raw_pcd(pcd_all, rm_stats_outliers=2, visualize=False):
 
 #     return False
 
+
+def inside_hand_filter(sampled_points, hand_mesh, in_d=0.0, close_d=-0.01, visualize=False):
+    sdf_all = np.full(sampled_points.shape[0], True)
+
+    n_points_close = 0
+    # for tool_mesh, _ in tool_list:
+    f = SDF(hand_mesh.vertices, hand_mesh.triangles)
+    sdf = f(sampled_points)
+    sdf_all &= sdf < in_d
+    n_points_close += np.sum(sdf > close_d)
+    
+    out_tool_points = sampled_points[sdf_all, :]
+    in_tool_points = sampled_points[~sdf_all, :]
+
+    if visualize:
+        out_tool_pcd = o3d.geometry.PointCloud()
+        out_tool_pcd.points = o3d.utility.Vector3dVector(out_tool_points)
+        out_tool_pcd.paint_uniform_color([0.6, 0.6, 0.6])
+        
+        in_tool_pcd = o3d.geometry.PointCloud()
+        in_tool_pcd.points = o3d.utility.Vector3dVector(in_tool_points)
+        in_tool_pcd.paint_uniform_color([0.0, 0.0, 0.0])
+
+        visualize_o3d([hand_mesh, out_tool_pcd, in_tool_pcd], title='inside_hand_filter')
+
+    return out_tool_points, in_tool_points
+
 # @profile
 def sample(pcd, pcd_dense_prev, pcd_sparse_prev, hand_mesh, is_moving_back, patch=False, visualize=False):
     if pcd_dense_prev is not None and is_moving_back: 
@@ -218,13 +245,8 @@ def sample(pcd, pcd_dense_prev, pcd_sparse_prev, hand_mesh, is_moving_back, patc
     cube_colors = np.asarray(cube.colors)
     color_avg = list(np.mean(cube_colors, axis=0))
 
-    if visualize:
-        # construct hand mesh
-        # hand_mesh = o3d.geometry.TriangleMesh()
-        # hand_mesh.vertices = o3d.utility.Vector3dVector(hand_verts)
-        # hand_pcd = o3d.geometry.PointCloud()
-        # hand_pcd.points = o3d.utility.Vector3dVector(hand_verts)
-        visualize_o3d([hand_mesh], title='hand_mesh')
+    # if visualize:
+    #     visualize_o3d([hand_mesh], title='hand_mesh')
     
     ##### 1. random sample 100x points in the bounding box #####
     lower = cube.get_min_bound()
@@ -252,7 +274,7 @@ def sample(pcd, pcd_dense_prev, pcd_sparse_prev, hand_mesh, is_moving_back, patc
     sampled_points = sampled_points[sdf > 0]
 
     ##### 3. use SDF to filter out points INSIDE the tool mesh #####
-    # sampled_points, _ = inside_tool_filter(sampled_points, tool_list, visualize=visualize)
+    sampled_points, _ = inside_hand_filter(sampled_points, hand_mesh=hand_mesh, visualize=visualize)
     sampled_pcd = o3d.geometry.PointCloud()
     sampled_pcd.points = o3d.utility.Vector3dVector(sampled_points)
 
@@ -337,7 +359,7 @@ def main(pcd_dense_prev=None, pcd_sparse_prev=None):
     camera_list = ['cam_0', 'cam_1', 'cam_2', 'cam_3']
     data_path = '/home/coolbot/data/hand_object_perception'
     train_dir = os.path.join(data_path, 'train_4cameras')
-    visualize = True
+    visualize = False
     is_moving_back = False
     # Step 1: Get point cloud from each camera, project to marker frame, and filter.
 
@@ -352,13 +374,10 @@ def main(pcd_dense_prev=None, pcd_sparse_prev=None):
         if scene_idx in BAD_SCENE:
             continue
 
-        if scene_idx <= 31:
-            continue
-
         object_idx_list = [3, scene_len-1]
         hand_idx_list = hand_perception_label["hand_idx"][scene_idx]
 
-        hand_ret_path = os.path.join(data_path, 'pred', f'pred_scene_{scene_idx:04d}.npy')
+        hand_ret_path = os.path.join(data_path, 'pred_wo_cam2', f'pred_scene_{scene_idx:04d}.npy')
         hand_ret_list = np.load(hand_ret_path, allow_pickle=True)
 
         hand_obj_ret = {}
@@ -384,7 +403,7 @@ def main(pcd_dense_prev=None, pcd_sparse_prev=None):
                 hand_obj_ret['hand_final_pcd'] = np.asarray(hand_mesh.vertices)
 
                 # Step 2: Save the point cloud data to a file.
-                np.save(f'/home/coolbot/data/hand_obj_ret/hand_obj_ret_{scene_idx:04d}.npy', hand_obj_ret)
+                np.save(f'/home/coolbot/data/hand_obj_ret_inside_hand_filter/hand_obj_ret_{scene_idx:04d}.npy', hand_obj_ret)
                 print(f'Saved hand object ret for scene {scene_idx}.')
 
 
