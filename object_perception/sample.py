@@ -10,6 +10,7 @@ from PIL import Image
 from projector_np import Projector
 from pcd_utils import *
 from utils.visualize import *
+from loss import *
 
 
 calib_path = '/home/coolbot/data/calib'
@@ -274,7 +275,7 @@ def sample(pcd, pcd_dense_prev, pcd_sparse_prev, hand_mesh, is_moving_back, patc
     sampled_points = sampled_points[sdf > 0]
 
     ##### 3. use SDF to filter out points INSIDE the tool mesh #####
-    sampled_points, _ = inside_hand_filter(sampled_points, hand_mesh=hand_mesh, visualize=visualize)
+    # sampled_points, _ = inside_hand_filter(sampled_points, hand_mesh=hand_mesh, visualize=visualize)
     sampled_pcd = o3d.geometry.PointCloud()
     sampled_pcd.points = o3d.utility.Vector3dVector(sampled_points)
 
@@ -356,15 +357,23 @@ def load_hand_mesh(hand_ret, frame_id):
 BAD_SCENE = [2, 3, 4, 5, 6, 7,]
 
 def main(pcd_dense_prev=None, pcd_sparse_prev=None):
-    camera_list = ['cam_0', 'cam_1', 'cam_2', 'cam_3']
-    data_path = '/home/coolbot/data/hand_object_perception'
-    train_dir = os.path.join(data_path, 'train_4cameras')
-    visualize = False
+    # camera_list = ['cam_0', 'cam_1', 'cam_2', 'cam_3']
+    camera_list = ['cam_0', 'cam_1', 'cam_3']
+
+    # data_path = '/home/coolbot/data/hand_object_perception'
+    data_path = '/home/coolbot/data'
+
+    # train_dir = os.path.join(data_path, 'train_4cameras')
+    train_dir = os.path.join(data_path, 'train')
+    
+    visualize = True
     is_moving_back = False
     # Step 1: Get point cloud from each camera, project to marker frame, and filter.
 
     with open('/home/coolbot/Documents/git/dex-dynamics/object_perception/hand_perception_label.yaml' , 'r') as f:
         hand_perception_label = yaml.load(f, Loader=yaml.FullLoader)
+
+    chamfer = Chamfer()
     
     for scene_dir in sorted(os.listdir(train_dir)):
         scene_path = os.path.join(train_dir, scene_dir)
@@ -374,7 +383,12 @@ def main(pcd_dense_prev=None, pcd_sparse_prev=None):
         if scene_idx in BAD_SCENE:
             continue
 
-        object_idx_list = [3, scene_len-1]
+        if scene_idx != 105:
+            continue
+
+        object_idx_list = [3, scene_len - 1]
+        # object_idx_list = [3, 5]
+
         hand_idx_list = hand_perception_label["hand_idx"][scene_idx]
 
         hand_ret_path = os.path.join(data_path, 'pred_wo_cam2', f'pred_scene_{scene_idx:04d}.npy')
@@ -403,9 +417,14 @@ def main(pcd_dense_prev=None, pcd_sparse_prev=None):
                 hand_obj_ret['hand_final_pcd'] = np.asarray(hand_mesh.vertices)
 
                 # Step 2: Save the point cloud data to a file.
-                np.save(f'/home/coolbot/data/hand_obj_ret_inside_hand_filter/hand_obj_ret_{scene_idx:04d}.npy', hand_obj_ret)
-                print(f'Saved hand object ret for scene {scene_idx}.')
+                # np.save(f'/home/coolbot/data/hand_obj_ret_inside_hand_filter/hand_obj_ret_{scene_idx:04d}.npy', hand_obj_ret)
+                # print(f'Saved hand object ret for scene {scene_idx}.')
+        obj_init = hand_obj_ret['object_init_pcd']
+        obj_final = hand_obj_ret['object_final_pcd']
+        obj_init = torch.tensor(obj_init).float().unsqueeze(0)
+        obj_final = torch.tensor(obj_final).float().unsqueeze(0)
 
+        print(f"chamfer loss of {scene_dir}: {chamfer(obj_init, obj_final)}")
 
 
 if __name__ == '__main__':

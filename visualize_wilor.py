@@ -7,7 +7,9 @@ import trimesh
 from object_perception.projector_np import Projector
 
 root_dir = '/home/coolbot/data'
-camera_sn_list = ['cam_0', 'cam_1', 'cam_3']
+# camera_sn_list = ['cam_0', 'cam_1', 'cam_2', 'cam_3']
+camera_sn_list = ['cam_0']
+
 calib_dir = os.path.join(root_dir, 'calib')
 # train_dir = os.path.join(root_dir, 'train')
 
@@ -30,7 +32,7 @@ intrinsics['cam_3'] = np.array([[910.8637085 ,   0.        , 619.1239624 ,   0. 
 
 data_dir = os.path.join(root_dir, 'hand_object_perception')
 
-pred_file = os.path.join(data_dir, 'pred')
+pred_file = os.path.join(data_dir, 'pred_1camera')
 train_dir = os.path.join(data_dir, 'train_4cameras')
 
 # data_dir = root_dir
@@ -38,7 +40,7 @@ train_dir = os.path.join(data_dir, 'train_4cameras')
 # pred_file = os.path.join(data_dir, 'pred')
 # train_dir = os.path.join(data_dir, 'train')
 
-scene_id = 20
+scene_id = 0
 
 pred_data = np.load(os.path.join(pred_file, f'pred_scene_{scene_id:04d}.npy'), allow_pickle=True)
 scene_len = len(pred_data)
@@ -76,6 +78,8 @@ for i in range(0, scene_len, 5):
 
     # pred data
     data = pred_data[i]
+    if data is None:
+        continue
     pred_joints_3d = np.array(data['pred_joints_3d']).astype(np.float32)
     pred_verts_3d = np.array(data['pred_verts_3d']).astype(np.float32)
     pred_ref_joints_3d = np.array(data['pred_ref_joints_3d']).astype(np.float32)
@@ -95,4 +99,13 @@ for i in range(0, scene_len, 5):
 
     axis = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.1, origin=[0, 0, 0])
 
-    o3d.visualization.draw_geometries([ axis, cloud_marker_all, verts_marker])
+    hand_mesh = o3d.geometry.TriangleMesh()
+    hand_mesh.vertices = o3d.utility.Vector3dVector(verts_marker_points)
+    hand_faces = np.load("mano_faces.npy")
+    hand_mesh.triangles = o3d.utility.Vector3iVector(hand_faces)
+    hand_mesh.compute_vertex_normals()
+    # change to color blue
+    hand_mesh.paint_uniform_color([0.0, 0.0, 1.0])
+
+
+    o3d.visualization.draw_geometries([ axis, cloud_marker_all, hand_mesh])
