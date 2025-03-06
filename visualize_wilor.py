@@ -7,8 +7,8 @@ import trimesh
 from object_perception.projector_np import Projector
 
 root_dir = '/home/coolbot/data'
-# camera_sn_list = ['cam_0', 'cam_1', 'cam_2', 'cam_3']
-camera_sn_list = ['cam_0']
+camera_sn_list = [ 'cam_0', 'cam_1', 'cam_2', 'cam_3']
+master_camera_sn = camera_sn_list[0]
 
 calib_dir = os.path.join(root_dir, 'calib')
 # train_dir = os.path.join(root_dir, 'train')
@@ -33,6 +33,8 @@ intrinsics['cam_3'] = np.array([[910.8637085 ,   0.        , 619.1239624 ,   0. 
 data_dir = os.path.join(root_dir, 'hand_object_perception')
 
 pred_file = os.path.join(data_dir, 'pred_1camera')
+# pred_file = os.path.join(data_dir, 'pred_wo_cam2')
+
 train_dir = os.path.join(data_dir, 'train_4cameras')
 
 # data_dir = root_dir
@@ -46,9 +48,6 @@ pred_data = np.load(os.path.join(pred_file, f'pred_scene_{scene_id:04d}.npy'), a
 scene_len = len(pred_data)
 scene_dir = os.path.join(train_dir, f'scene_{scene_id:04d}_0')
 
-# camera_sn = 'cam_0'
-master_camera_sn = 'cam_0'
-# intrinsics = intrinsics[camera_sn]
 
 for i in range(0, scene_len, 5):
     cloud_marker_all = o3d.geometry.PointCloud()
