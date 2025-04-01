@@ -12,19 +12,13 @@ from pcd_utils import *
 from utils.visualize import *
 from loss import *
 
+from wis3d import Wis3D
 
 calib_path = '/home/coolbot/data/calib'
-# object_path = '/home/coolbot/data/hand_object_perception/train/scene_0101_0'
-
-# hand_ret_path = '/home/coolbot/data/hand_obj_ret/new/hand_obj_ret_0101.npy'
-
-
 n_particles = 300
 
 FILTER_MIN = np.array([0.0 - 0.1, 0.0 - 0.1, 0.0 - 0.07])
 FILTER_MAX = np.array([0.0 + 0.07, 0.0 + 0.07, 0.0 + 0.07])
-
-
 
 def rgbd_image_to_point_cloud(color, depth, intrinsics):
     _h = color.shape[0]
@@ -88,11 +82,8 @@ def merge_point_clouds(frame_id, camera_list, object_path):
         intrinsics = projector.intrinsics[camera_sn]
 
         pcd = rgbd_image_to_point_cloud(color, depth, intrinsics)
-
         pcd_marker = project_point_cloud_to_marker(pcd, camera_sn)
-
         pcd_marker = filter_point_cloud(pcd_marker)
-
         pcd_all_list.append(pcd_marker)
 
     # o3d.visualization.draw_geometries(pcd_all)
@@ -190,20 +181,6 @@ def preprocess_raw_pcd(pcd_all, rm_stats_outliers=2, visualize=False):
 
     return cube, rest
 
-# def check_if_close(cube, tool_list):
-#     cube_hull, _ = cube.compute_convex_hull()
-#     f = SDF(cube_hull.vertices, cube_hull.triangles)
-    
-#     # a sparse pass
-#     for _, tool_surface in tool_list:
-#         tool_surface_sparse = tool_surface.voxel_down_sample(voxel_size=0.01)
-#         sdf = f(np.asarray(tool_surface_sparse.points))
-#         n_points_close = np.sum(sdf > 0)
-#         if n_points_close > 0:
-#             return True
-
-#     return False
-
 
 def inside_hand_filter(sampled_points, hand_mesh, in_d=0.0, close_d=-0.01, visualize=False):
     sdf_all = np.full(sampled_points.shape[0], True)
@@ -255,8 +232,6 @@ def sample(pcd, pcd_dense_prev, pcd_sparse_prev, hand_mesh, is_moving_back, patc
     sample_size = 50 * n_particles
     sampled_points = np.random.rand(sample_size, 3) * (upper - lower) + lower
 
-    # visualize = True
-
     # if patch and is_close:
     #     cube = inside_cube_filter(cube, tool_list, visualize=visualize)
 
@@ -275,7 +250,7 @@ def sample(pcd, pcd_dense_prev, pcd_sparse_prev, hand_mesh, is_moving_back, patc
     sampled_points = sampled_points[sdf > 0]
 
     ##### 3. use SDF to filter out points INSIDE the tool mesh #####
-    # sampled_points, _ = inside_hand_filter(sampled_points, hand_mesh=hand_mesh, visualize=visualize)
+    sampled_points, _ = inside_hand_filter(sampled_points, hand_mesh=hand_mesh, visualize=visualize)
     sampled_pcd = o3d.geometry.PointCloud()
     sampled_pcd.points = o3d.utility.Vector3dVector(sampled_points)
 
@@ -295,49 +270,20 @@ def sample(pcd, pcd_dense_prev, pcd_sparse_prev, hand_mesh, is_moving_back, patc
         outliers.paint_uniform_color([0.8, 0.0, 0.0])
         visualize_o3d([cube, sampled_pcd, outliers], title='cleaned_point_cloud', pcd_color=color_avg)
 
-    ##### (optional) 8. surface sampling #####
-    surface_sample = False
-    if surface_sample:
-        ##### 7. farthest point sampling to downsample the pcd to 300 points #####
-        # fps_points = fps(np.asarray(sampled_pcd.points), args.n_particles * 10)
-        # fps_pcd = o3d.geometry.PointCloud()
-        # fps_pcd.points = o3d.utility.Vector3dVector(fps_points)
+    ##### 7. farthest point sampling to downsample the pcd to 300 points #####
+    fps_points = fps(np.asarray(sampled_pcd.points), n_particles)
+    fps_pcd = o3d.geometry.PointCloud()
+    fps_pcd.points = o3d.utility.Vector3dVector(fps_points)
 
-        selected_mesh = alpha_shape_mesh_reconstruct(sampled_pcd, alpha=0.005, visualize=visualize)
-        
-        if not args.correspondance or pcd_dense_prev is None:
-            selected_surface = o3d.geometry.TriangleMesh.sample_points_poisson_disk(selected_mesh, args.n_particles)
-            surface_points = np.asarray(selected_surface.points)
-        else:
-            tri_mesh = trimesh.Trimesh(np.asarray(selected_mesh.vertices), np.asarray(selected_mesh.triangles),
-                                        vertex_normals=np.asarray(selected_mesh.vertex_normals))
-            mesh_q = trimesh.proximity.ProximityQuery(tri_mesh)
-            prox_points, distance, triangle_id = mesh_q.on_surface(np.asarray(pcd_sparse_prev.points))
-            selector = (distance > 0.0)[..., None]
-            surface_points = prox_points * selector + np.asarray(pcd_sparse_prev.points) * (1 - selector)
-        
-        surface_pcd = o3d.geometry.PointCloud()
-        surface_pcd.points = o3d.utility.Vector3dVector(surface_points)
+    if visualize:
+        visualize_o3d([fps_pcd, hand_mesh], title='fps_point_cloud', pcd_color=color_avg)
 
-        if visualize:
-            visualize_o3d([surface_pcd], title='surface_point_cloud', pcd_color=color_avg)
+    selected_pcd = fps_pcd
 
-        selected_pcd = surface_pcd
-    else:
-        ##### 7. farthest point sampling to downsample the pcd to 300 points #####
-        fps_points = fps(np.asarray(sampled_pcd.points), n_particles)
-        fps_pcd = o3d.geometry.PointCloud()
-        fps_pcd.points = o3d.utility.Vector3dVector(fps_points)
-
-        if visualize:
-            visualize_o3d([fps_pcd, hand_mesh], title='fps_point_cloud', pcd_color=color_avg)
-
-        selected_pcd = fps_pcd
-
-    return sampled_pcd, selected_pcd
+    return sampled_pcd, selected_pcd, selected_mesh
 
 
-def load_hand_mesh(hand_ret, frame_id):
+def load_hand_mesh(hand_ret, frame_id, master_camera_sn='cam_0'):
     hand_verts = hand_ret['pred_verts_3d'][0]
     # hand_faces = hand_ret['hand_faces'][0]
     hand_faces = np.load('/home/coolbot/Documents/git/dex-dynamics/mano_faces.npy', allow_pickle=True)
@@ -345,7 +291,7 @@ def load_hand_mesh(hand_ret, frame_id):
     # change to numpy array
     hand_verts = np.array(hand_verts).astype(np.float32)
     projector = Projector(calib_path=calib_path)
-    hand_verts = projector.project_point_cloud_to_marker(hand_verts, 'cam_0')
+    hand_verts = projector.project_point_cloud_to_marker(hand_verts, master_camera_sn)
     hand_faces = np.array(hand_faces)
 
     hand_mesh = o3d.geometry.TriangleMesh()
@@ -354,78 +300,149 @@ def load_hand_mesh(hand_ret, frame_id):
 
     return hand_mesh
 
-BAD_SCENE = [2, 3, 4, 5, 6, 7,]
+def hand_obj_sample(hand_idx_list, object_idx_list, hand_ret_list, scene_path, camera_list, master_camera_sn, visualize=False, negative_data=False):
+    pcd_dense_prev = None
+    pcd_sparse_prev = None
+    is_moving_back = False
+    hand_obj_ret = {}
+    pcd_init = merge_point_clouds(frame_id=object_idx_list[0], camera_list=camera_list, object_path=scene_path)
+    pcd_final = merge_point_clouds(frame_id=object_idx_list[1], camera_list=camera_list, object_path=scene_path)
+
+    if visualize:
+        visualize_o3d([pcd_init], title='object_init')
+        visualize_o3d([pcd_final], title='object_final')
+
+    hand_ret_init, hand_ret_final = hand_ret_list[hand_idx_list[0]], hand_ret_list[hand_idx_list[1]]
+    hand_mesh_init = load_hand_mesh(hand_ret_init, frame_id=hand_idx_list[0], master_camera_sn=master_camera_sn)
+    hand_mesh_final = load_hand_mesh(hand_ret_final, frame_id=hand_idx_list[1], master_camera_sn=master_camera_sn)
+    pcd_dense_init, pcd_sparse_init, _ = sample(pcd_init, pcd_dense_prev, pcd_sparse_prev, hand_mesh_init, is_moving_back, patch=False, visualize=visualize)
+    if negative_data:
+        pcd_sparse_final = pcd_sparse_init
+        pcd_dense_final = pcd_dense_init
+    else:
+        pcd_dense_final, pcd_sparse_final, _ = sample(pcd_final, pcd_dense_prev, pcd_sparse_prev, hand_mesh_final, is_moving_back, patch=False, visualize=visualize)
+
+    hand_obj_ret['object_init_pcd'] = np.asarray(pcd_sparse_init.points)
+    hand_obj_ret['object_final_pcd'] = np.asarray(pcd_sparse_final.points)
+    hand_obj_ret['hand_init_pcd'] = np.asarray(hand_mesh_init.vertices)
+    hand_obj_ret['hand_final_pcd'] = np.asarray(hand_mesh_final.vertices)
+    hand_obj_ret['object_init_pcd_dense'] = np.asarray(pcd_dense_init.points)
+    hand_obj_ret['object_final_pcd_dense'] = np.asarray(pcd_dense_final.points)
+
+    return hand_obj_ret
+
+def random_hand_init_frame(hand_idx_list_all, n_hand_samples):
+    # Generate unique random indices
+    available_indices = np.arange(hand_idx_list_all[0], hand_idx_list_all[1] + 1)
+    n_available = len(available_indices)
+
+    # Ensure we don't request more samples than available
+    if n_hand_samples > n_available:
+        hand_init_list = np.random.randint(hand_idx_list_all[0], hand_idx_list_all[1] + 1, n_hand_samples)
+    else:
+        hand_init_list = np.random.choice(
+            available_indices,
+            size=n_hand_samples,
+            replace=False  # Ensures no duplicates
+            )
+
+    return hand_init_list
+
 
 def main(pcd_dense_prev=None, pcd_sparse_prev=None):
-    # camera_list = ['cam_0', 'cam_1', 'cam_2', 'cam_3']
-    camera_list = ['cam_0', 'cam_1', 'cam_3']
+    n_hand_samples = 4
+    n_negative_hand_samples = 4 
+    camera_list = ['cam_0', 'cam_1', 'cam_2', 'cam_3']
+    master_camera_sn = 'cam_0'
 
-    # data_path = '/home/coolbot/data/hand_object_perception'
-    data_path = '/home/coolbot/data'
+    data_path = '/home/coolbot/data/hand_object_perception'
+    hand_ret_file = 'pred_hand_data_0313'
+    train_dir = os.path.join(data_path, 'train_0313')
 
-    # train_dir = os.path.join(data_path, 'train_4cameras')
-    train_dir = os.path.join(data_path, 'train')
+    save_ret_dir = '/home/coolbot/data/hand_obj_ret_0331_obj_dense'
+    os.makedirs(save_ret_dir, exist_ok=True)
     
-    visualize = True
-    is_moving_back = False
-    # Step 1: Get point cloud from each camera, project to marker frame, and filter.
-
-    with open('/home/coolbot/Documents/git/dex-dynamics/object_perception/hand_perception_label.yaml' , 'r') as f:
+    visualize = False
+    with open('/home/coolbot/Documents/git/dex-dynamics/object_perception/hand_perception_label_integrate.yaml' , 'r') as f:
         hand_perception_label = yaml.load(f, Loader=yaml.FullLoader)
 
-    chamfer = Chamfer()
-    
+    # chamfer = Chamfer()
+    # emd = EMDCPU()
+
+    # wis3d = Wis3D(out_folder="/home/coolbot/Documents/git/dex-dynamics/wis3d_exp_test_cam0",
+    #               sequence_name="hand_trajectory",
+    #               xyz_pattern=("x", "-y", "-z"),
+    #             )
+
+    BAD_SCENE = [301, 302, 307, 308, 311, 314, 316, 325, 326, 344, 359, 362, 364, 366, 395, 397]
+
     for scene_dir in sorted(os.listdir(train_dir)):
         scene_path = os.path.join(train_dir, scene_dir)
         scene_len = len(os.listdir(os.path.join(scene_path, 'cam_0', 'color')))
         scene_idx = int(scene_dir[6:10])
-        
+
         if scene_idx in BAD_SCENE:
+            print(f'Skipping scene {scene_idx}.')
             continue
 
-        if scene_idx != 105:
-            continue
-
-        object_idx_list = [3, scene_len - 1]
-        # object_idx_list = [3, 5]
-
-        hand_idx_list = hand_perception_label["hand_idx"][scene_idx]
-
-        hand_ret_path = os.path.join(data_path, 'pred_wo_cam2', f'pred_scene_{scene_idx:04d}.npy')
+        # hand perception frames
+        hand_ret_path = os.path.join(data_path, hand_ret_file, f'pred_scene_{scene_idx:04d}.npy')
         hand_ret_list = np.load(hand_ret_path, allow_pickle=True)
+        hand_idx_list_all = hand_perception_label["hand_idx"][scene_idx]
+        print(f'initial frame: {hand_idx_list_all[0]}, contact frame: {hand_idx_list_all[1]}, hand end frame: {hand_idx_list_all[2]}')
 
-        hand_obj_ret = {}
+        hand_init_list = random_hand_init_frame(hand_idx_list_all, n_hand_samples)
 
-        for object_idx, hand_idx in zip(object_idx_list, hand_idx_list):
-            pcd = merge_point_clouds(frame_id=object_idx, camera_list=camera_list, object_path=scene_path)
+        # object perception frames
+        for i, hand_init_idx in enumerate(hand_init_list):
+            object_idx_list = [0, scene_len - 1]
+            hand_idx_list = [hand_init_idx, hand_idx_list_all[2]]
+            print(f'hand_idx_list: {hand_idx_list}')
+
+            hand_obj_ret = hand_obj_sample(hand_idx_list, object_idx_list, hand_ret_list, scene_path, camera_list, master_camera_sn, visualize=visualize)
+            np.save(os.path.join(save_ret_dir, f'hand_obj_ret_{scene_idx:04d}-{i}.npy'), hand_obj_ret)
+            print(f'Saved hand object ret for scene {scene_idx}-{i}.')
             
-            if visualize:
-                visualize_o3d([pcd], title='merged_point_cloud')
-            
-            hand_ret = hand_ret_list[hand_idx]
+        # negative data
+        for i in range(n_negative_hand_samples):
+            object_idx_list = [0, 0]
+            hand_idx_list = np.random.randint(hand_idx_list_all[0], hand_idx_list_all[1] + 1, 2)
+            # hand_idx_list = sorted(hand_idx_list)
+            print(f'negative hand_idx_list: {hand_idx_list}')
+            hand_obj_ret = hand_obj_sample(hand_idx_list, object_idx_list, hand_ret_list, scene_path, camera_list, master_camera_sn, visualize=visualize, negative_data=True)
+            np.save(os.path.join(save_ret_dir, f'hand_obj_ret_neg_{scene_idx:04d}-{i}.npy'), hand_obj_ret)
+            print(f'Saved negative hand object ret for scene {scene_idx}-{i}.')
 
-            hand_mesh = load_hand_mesh(hand_ret, frame_id=hand_idx)
+            # wis3d.add_point_cloud(hand_obj_ret['object_init_pcd'], torch.tensor([[0, 255, 0]]), name="object_init_pcd")
+            # wis3d.add_point_cloud(hand_obj_ret['object_final_pcd'], torch.tensor([[255, 0, 0]]) ,name="object_final_pcd")
+            # wis3d.add_point_cloud(hand_obj_ret['hand_init_pcd'], torch.tensor([[0, 255, 0]]), name="hand_init_pcd")
+            # wis3d.add_point_cloud(hand_obj_ret['hand_final_pcd'], torch.tensor([[255, 0, 0]]), name="hand_final_pcd")
+            # wis3d.increase_scene_id()
 
-            pcd_dense, pcd_sparse = sample(pcd, pcd_dense_prev, pcd_sparse_prev, hand_mesh,
-                is_moving_back, patch=False, visualize=visualize)
+            # obj_init = hand_obj_ret['object_init_pcd']
+            # obj_final = hand_obj_ret['object_final_pcd']
+            # obj_init = torch.tensor(obj_init).float().unsqueeze(0)
+            # obj_final = torch.tensor(obj_final).float().unsqueeze(0)
 
-            if object_idx == object_idx_list[0]:
-                hand_obj_ret['object_init_pcd'] = np.asarray(pcd_sparse.points)
-                hand_obj_ret['hand_init_pcd'] = np.asarray(hand_mesh.vertices)
-            else:
-                hand_obj_ret['object_final_pcd'] = np.asarray(pcd_sparse.points)
-                hand_obj_ret['hand_final_pcd'] = np.asarray(hand_mesh.vertices)
 
-                # Step 2: Save the point cloud data to a file.
-                # np.save(f'/home/coolbot/data/hand_obj_ret_inside_hand_filter/hand_obj_ret_{scene_idx:04d}.npy', hand_obj_ret)
-                # print(f'Saved hand object ret for scene {scene_idx}.')
-        obj_init = hand_obj_ret['object_init_pcd']
-        obj_final = hand_obj_ret['object_final_pcd']
-        obj_init = torch.tensor(obj_init).float().unsqueeze(0)
-        obj_final = torch.tensor(obj_final).float().unsqueeze(0)
+        # visualize the point cloud and mesh
+        # import pyvista as pv
+        # plt = pv.Plotter()
+        # # import pdb; pdb.set_trace()
+        # point_cloud_init = pv.PolyData(obj_init.squeeze().numpy())
+        # point_cloud_final = pv.PolyData(obj_final.squeeze().numpy())
+        # plt.add_mesh(point_cloud_init, color='red', point_size=10)
+        # plt.add_mesh(point_cloud_final, color='blue', point_size=10)
+        # plt.add_mesh(mesh_init, color='red', opacity=0.2)
+        # plt.add_mesh(mesh_final, color='blue', opacity=0.2)
+        # plt.show()
 
-        print(f"chamfer loss of {scene_dir}: {chamfer(obj_init, obj_final)}")
-
+        # print(f"sdf loss of {scene_dir}: {differentiable_sdf_loss(obj_init.squeeze(), obj_final.squeeze())}")
+        # print(f"occupancy loss of {scene_dir}: {differentiable_occupancy_loss(obj_init.squeeze(), obj_final.squeeze())}")
+        # print(f"chamfer loss of {scene_dir}: {chamfer(obj_init, obj_final)}")
+        # print(f"chamfer loss (20%) of {scene_dir}: {chamfer(obj_init, obj_final, probability=0.2)}")
+        # print(f"emd loss of {scene_dir}: {emd(obj_init, obj_final)}")
+        # print("*********************************************************")
 
 if __name__ == '__main__':
     main()
