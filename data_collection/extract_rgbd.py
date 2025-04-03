@@ -6,19 +6,15 @@ import subprocess
 EXTRACTION_SCRIPT = "data_collection/sync_ros_to_data.py"
 
 # List of ROS bag files to play
-# BAG_FILES = [
-#     "/home/coolbot/data/hand_object_perception/ros_record/scene_0003/scene_0003_0.db3",
-#     "/home/coolbot/data/hand_object_perception/ros_record/scene_0001/scene_0001_0.db3",
-#     "/home/coolbot/data/hand_object_perception/ros_record/scene_0002/scene_0002_0.db3",
-# ]
 
-start_idx= 21
-end_idx = 60
 
-BAG_FILES = [f"/home/coolbot/data/hand_object_perception/ros/4cameras/scene_{i:04d}/scene_{i:04d}_0.db3" for i in range(start_idx, end_idx+1)]
+start_idx= 375
+end_idx = 399
+
+BAG_FILES = [f"/home/coolbot/data/hand_object_perception/ros/scene_{i:04d}/scene_{i:04d}_0.db3" for i in range(start_idx, end_idx+1)]
 
 # Base directory for saving images
-BASE_SAVE_DIR = "/home/coolbot/data/hand_object_perception/train_4cameras"
+BASE_SAVE_DIR = "/home/coolbot/data/hand_object_perception/train_0313"
 
 def run_extraction_script(save_dir):
     """Runs the image extraction script with a specific save directory."""
