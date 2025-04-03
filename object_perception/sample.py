@@ -10,15 +10,10 @@ from PIL import Image
 from projector_np import Projector
 from pcd_utils import *
 from utils.visualize import *
+from utils.constants import *
 from loss import *
 
 from wis3d import Wis3D
-
-calib_path = '/home/coolbot/data/calib'
-n_particles = 300
-
-FILTER_MIN = np.array([0.0 - 0.1, 0.0 - 0.1, 0.0 - 0.07])
-FILTER_MAX = np.array([0.0 + 0.07, 0.0 + 0.07, 0.0 + 0.07])
 
 def rgbd_image_to_point_cloud(color, depth, intrinsics):
     _h = color.shape[0]
@@ -37,9 +32,7 @@ def rgbd_image_to_point_cloud(color, depth, intrinsics):
 
     return pcd
 
-def project_point_cloud_to_marker(pcd, camera_sn):
-    projector = Projector(calib_path=calib_path)
-
+def project_point_cloud_to_marker(pcd, camera_sn, projector=None):
     pcd_marker = o3d.geometry.PointCloud()
 
     pcd_color = np.asarray(pcd.colors)
@@ -66,8 +59,7 @@ def filter_point_cloud(pcd):
 
     return pcd
 
-def merge_point_clouds(frame_id, camera_list, object_path):
-    projector = Projector(calib_path=calib_path)
+def merge_point_clouds(frame_id, camera_list, object_path, projector=None):
     pcd_all_list = []
     for camera_sn in camera_list:
         color_image_path = f'{object_path}/{camera_sn}/color'
@@ -79,10 +71,10 @@ def merge_point_clouds(frame_id, camera_list, object_path):
         color = np.array(Image.open(f'{color_image_path}/{color_image_files[frame_id]}'))
         depth = np.array(Image.open(f'{depth_image_path}/{depth_image_files[frame_id]}'))
 
-        intrinsics = projector.intrinsics[camera_sn]
+        intrinsics = INTRINSICS[camera_sn]
 
         pcd = rgbd_image_to_point_cloud(color, depth, intrinsics)
-        pcd_marker = project_point_cloud_to_marker(pcd, camera_sn)
+        pcd_marker = project_point_cloud_to_marker(pcd, camera_sn, projector=projector)
         pcd_marker = filter_point_cloud(pcd_marker)
         pcd_all_list.append(pcd_marker)
 
@@ -213,6 +205,8 @@ def sample(pcd, pcd_dense_prev, pcd_sparse_prev, hand_mesh, is_moving_back, patc
     if pcd_dense_prev is not None and is_moving_back: 
         return pcd_dense_prev, pcd_sparse_prev
     
+    n_particles = 300
+
     cube, rest = preprocess_raw_pcd(pcd, visualize=visualize)
     # is_close = check_if_close(cube, tool_list)
 
@@ -283,14 +277,12 @@ def sample(pcd, pcd_dense_prev, pcd_sparse_prev, hand_mesh, is_moving_back, patc
     return sampled_pcd, selected_pcd, selected_mesh
 
 
-def load_hand_mesh(hand_ret, frame_id, master_camera_sn='cam_0'):
+def load_hand_mesh(hand_ret, frame_id, master_camera_sn='cam_0', projector=None):
     hand_verts = hand_ret['pred_verts_3d'][0]
-    # hand_faces = hand_ret['hand_faces'][0]
-    hand_faces = np.load('/home/coolbot/Documents/git/dex-dynamics/mano_faces.npy', allow_pickle=True)
+    hand_faces = np.load('object_perception/mano_faces.npy', allow_pickle=True)
 
     # change to numpy array
     hand_verts = np.array(hand_verts).astype(np.float32)
-    projector = Projector(calib_path=calib_path)
     hand_verts = projector.project_point_cloud_to_marker(hand_verts, master_camera_sn)
     hand_faces = np.array(hand_faces)
 
@@ -300,21 +292,21 @@ def load_hand_mesh(hand_ret, frame_id, master_camera_sn='cam_0'):
 
     return hand_mesh
 
-def hand_obj_sample(hand_idx_list, object_idx_list, hand_ret_list, scene_path, camera_list, master_camera_sn, visualize=False, negative_data=False):
+def hand_obj_sample(hand_idx_list, object_idx_list, hand_ret_list, scene_path, camera_list, master_camera_sn, visualize=False, negative_data=False, projector=None):
     pcd_dense_prev = None
     pcd_sparse_prev = None
     is_moving_back = False
     hand_obj_ret = {}
-    pcd_init = merge_point_clouds(frame_id=object_idx_list[0], camera_list=camera_list, object_path=scene_path)
-    pcd_final = merge_point_clouds(frame_id=object_idx_list[1], camera_list=camera_list, object_path=scene_path)
+    pcd_init = merge_point_clouds(frame_id=object_idx_list[0], camera_list=camera_list, object_path=scene_path, projector=projector)
+    pcd_final = merge_point_clouds(frame_id=object_idx_list[1], camera_list=camera_list, object_path=scene_path, projector=projector)
 
     if visualize:
         visualize_o3d([pcd_init], title='object_init')
         visualize_o3d([pcd_final], title='object_final')
 
     hand_ret_init, hand_ret_final = hand_ret_list[hand_idx_list[0]], hand_ret_list[hand_idx_list[1]]
-    hand_mesh_init = load_hand_mesh(hand_ret_init, frame_id=hand_idx_list[0], master_camera_sn=master_camera_sn)
-    hand_mesh_final = load_hand_mesh(hand_ret_final, frame_id=hand_idx_list[1], master_camera_sn=master_camera_sn)
+    hand_mesh_init = load_hand_mesh(hand_ret_init, frame_id=hand_idx_list[0], master_camera_sn=master_camera_sn, projector=projector)
+    hand_mesh_final = load_hand_mesh(hand_ret_final, frame_id=hand_idx_list[1], master_camera_sn=master_camera_sn, projector=projector)
     pcd_dense_init, pcd_sparse_init, _ = sample(pcd_init, pcd_dense_prev, pcd_sparse_prev, hand_mesh_init, is_moving_back, patch=False, visualize=visualize)
     if negative_data:
         pcd_sparse_final = pcd_sparse_init
@@ -344,22 +336,24 @@ def random_hand_init_frame(hand_idx_list_all, n_hand_samples):
             available_indices,
             size=n_hand_samples,
             replace=False  # Ensures no duplicates
-            )
+        )
 
     return hand_init_list
 
 
 def main(pcd_dense_prev=None, pcd_sparse_prev=None):
     n_hand_samples = 4
-    n_negative_hand_samples = 4 
-    camera_list = ['cam_0', 'cam_1', 'cam_2', 'cam_3']
+    n_negative_hand_samples = 4
+
     master_camera_sn = 'cam_0'
+    camera_list = ['cam_0', 'cam_1', 'cam_2', 'cam_3']
+    calib_path = '/home/coolbot/data/calib'
 
     data_path = '/home/coolbot/data/hand_object_perception'
     hand_ret_file = 'pred_hand_data_0313'
     train_dir = os.path.join(data_path, 'train_0313')
 
-    save_ret_dir = '/home/coolbot/data/hand_obj_ret_0331_obj_dense'
+    save_ret_dir = '/home/coolbot/data/hand_obj_ret_0402_obj_dense'
     os.makedirs(save_ret_dir, exist_ok=True)
     
     visualize = False
@@ -369,10 +363,7 @@ def main(pcd_dense_prev=None, pcd_sparse_prev=None):
     # chamfer = Chamfer()
     # emd = EMDCPU()
 
-    # wis3d = Wis3D(out_folder="/home/coolbot/Documents/git/dex-dynamics/wis3d_exp_test_cam0",
-    #               sequence_name="hand_trajectory",
-    #               xyz_pattern=("x", "-y", "-z"),
-    #             )
+    projector = Projector(calib_path=calib_path)
 
     BAD_SCENE = [301, 302, 307, 308, 311, 314, 316, 325, 326, 344, 359, 362, 364, 366, 395, 397]
 
@@ -399,7 +390,7 @@ def main(pcd_dense_prev=None, pcd_sparse_prev=None):
             hand_idx_list = [hand_init_idx, hand_idx_list_all[2]]
             print(f'hand_idx_list: {hand_idx_list}')
 
-            hand_obj_ret = hand_obj_sample(hand_idx_list, object_idx_list, hand_ret_list, scene_path, camera_list, master_camera_sn, visualize=visualize)
+            hand_obj_ret = hand_obj_sample(hand_idx_list, object_idx_list, hand_ret_list, scene_path, camera_list, master_camera_sn, visualize=visualize, projector=projector)
             np.save(os.path.join(save_ret_dir, f'hand_obj_ret_{scene_idx:04d}-{i}.npy'), hand_obj_ret)
             print(f'Saved hand object ret for scene {scene_idx}-{i}.')
             
@@ -409,15 +400,9 @@ def main(pcd_dense_prev=None, pcd_sparse_prev=None):
             hand_idx_list = np.random.randint(hand_idx_list_all[0], hand_idx_list_all[1] + 1, 2)
             # hand_idx_list = sorted(hand_idx_list)
             print(f'negative hand_idx_list: {hand_idx_list}')
-            hand_obj_ret = hand_obj_sample(hand_idx_list, object_idx_list, hand_ret_list, scene_path, camera_list, master_camera_sn, visualize=visualize, negative_data=True)
+            hand_obj_ret = hand_obj_sample(hand_idx_list, object_idx_list, hand_ret_list, scene_path, camera_list, master_camera_sn, visualize=visualize, negative_data=True, projector=projector)
             np.save(os.path.join(save_ret_dir, f'hand_obj_ret_neg_{scene_idx:04d}-{i}.npy'), hand_obj_ret)
             print(f'Saved negative hand object ret for scene {scene_idx}-{i}.')
-
-            # wis3d.add_point_cloud(hand_obj_ret['object_init_pcd'], torch.tensor([[0, 255, 0]]), name="object_init_pcd")
-            # wis3d.add_point_cloud(hand_obj_ret['object_final_pcd'], torch.tensor([[255, 0, 0]]) ,name="object_final_pcd")
-            # wis3d.add_point_cloud(hand_obj_ret['hand_init_pcd'], torch.tensor([[0, 255, 0]]), name="hand_init_pcd")
-            # wis3d.add_point_cloud(hand_obj_ret['hand_final_pcd'], torch.tensor([[255, 0, 0]]), name="hand_final_pcd")
-            # wis3d.increase_scene_id()
 
             # obj_init = hand_obj_ret['object_init_pcd']
             # obj_final = hand_obj_ret['object_final_pcd']
