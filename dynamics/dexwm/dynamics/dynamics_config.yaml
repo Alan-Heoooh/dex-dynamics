@@ -1,0 +1,72 @@
+log_name: debug
+exp_name: exps/normalize
+
+debug: false
+test_only: false
+pretrained_path: 
+
+data_dir: "/hdd/data/dexycb"
+# data_dir_prefix: dexycb
+rebuild_dataset: true
+particles_per_obj: 40
+particles_per_hand: 40
+n_points: [40, 40]
+num_workers: 16
+data_augment: true
+num_augment: 10
+# skip_data_folder: []
+# module_name: dynamics_ae_lstm
+# pred_physics_params: false
+
+
+mask_fingertips: true
+rigid_only: true
+use_knn: false
+k_neighbors: 5
+connectivity_radius_inner: 0.04
+connectivity_radius_outer: 0.04
+gnn_type: dpi
+has_rigid_motion: true
+loss_by_n_points: 1
+history_length: 1
+train_sequence_length: 5
+test_sequence_length: 30 #29
+action_per_frames: 2
+logging_level: INFO
+loss_type: mse
+pos_loss_weight: 10
+object_weights: [2, 1]
+metric_names: [chamfer, emd, mse]
+chamfer_emd_weights: 
+    chamfer: 0.5 
+    emd: 0.5
+teacher_forcing_thres: 0.1
+rigid_dim: 6
+feature_dim_action: 3
+euler_angle_bound: 45
+
+dpi_net: 
+    hidden_size_edge: 150
+    hidden_size_effect: 150
+    hidden_size_node: 150
+    obj_phy_feat_len: 16
+    n_layers: 3
+    propgation_step: 3
+    history_before_rigid: false
+
+point_transformer: 
+    hidden_size_edge: 150
+    hidden_size_effect: 150
+    hidden_size_node: 150
+    hidden_transformer_dim: 64
+    propgation_step: 3
+    n_layers: 3
+
+optimizer: 
+    lr: 0.0005 
+    max_epoch: 10000
+train_batch_size: 16
+test_batch_size: 1
+visualize_every: 1
+log_every_n_steps: 20
+

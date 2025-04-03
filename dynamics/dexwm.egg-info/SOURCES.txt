@@ -1,0 +1,6 @@
+README.md
+setup.py
+dexwm.egg-info/PKG-INFO
+dexwm.egg-info/SOURCES.txt
+dexwm.egg-info/dependency_links.txt
+dexwm.egg-info/top_level.txt

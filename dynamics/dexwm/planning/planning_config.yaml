@@ -1,0 +1,88 @@
+exp_name: exps/planning-heuristic-sdf
+debug: false #true
+
+log_every: 1
+visualize_k: 1
+
+# filter_objects: ["mustard_bottle"] #"tomato_soup_can", "sugar_box", "bowl", ] #"sugar_box"]
+test_file_path: "20200709-subject-01/20200709_143211"
+
+pretrained_path: "/mnt/dynamics/exps/normalize/train_tb_logs/debug/version_123/checkpoints/latest-epoch=499-step=4500.ckpt"
+dynamics_config_path: "/mnt/dynamics/exps/normalize/train_tb_logs/debug/version_123/hparams.yaml"
+
+action_dim: 12
+horizon: 30
+# history_len: 30
+
+num_execution_iterations: 30
+num_samples: 10
+beta: 0.3
+gamma: 1.0
+
+use_heuristic_mu: true #true # define approach direction and lift direction for mu initialization
+use_human_grasp: true #true # use human grasp pose as initial pose
+
+# init_std: [0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01]
+init_std: [1, 1, 1, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05]
+# position (m), orientation (deg), parameterrs (unit)
+action_limit: [0.01, 0.01, 0.01, 5, 5, 5, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+
+# init_std: [0.01, 0.01, 0.01, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005] #0.05, 0.05, 0.05, 0.05, 0.05, 0.05]
+update_std: False
+# init_qpos: [0, 0, 0, 0, 0, 0]
+# num_actions_to_execute_per_step: 15
+
+predict_type: "ability_hand_right" #"hand" #"ability_hand_right" # hand" #"ability_hand_right" #"hand" 
+# robot: "ability_hand_right"
+
+loss:
+  names: ["pointcloud", "finger", "palm", "overlap", "reg", "sdf", "jitter"]
+  weights: [10., .5, .5, 0., 0., 1., 0.]
+  # weights: [10., .5, .5, 0., 0.5, 1, 0.5]
+  # weights: [10., .5, .5, 0., 0., 0., 0.]
+  last_states: [0, 0, 0, 0, 0, 0, 0]
+  eval: "pointcloud"
+  radius: 0.01
+  decay_factor: 0.99
+  penetration_weight: 0.5 # 0.5 #  2
+  attraction_weight: 0.5 #0.05
+  penetration_threshold: -0.02
+
+object_pose: 
+  p: [0.45, 0.16, 0.08]
+  q: [1, 0, 0, 0]
+
+goal_offset: [0, 0, 0.15]
+
+obstacle:
+  pose: null # [0, 0.05, 0]
+  mesh_path: "/hdd/data/dexycb/models/006_mustard_bottle/textured_simple.obj"
+  # mesh: ""
+
+# goal: 
+#   position: [0.5, -0.2, 0.025]
+#   orientation: [0, 0, 0]
+# use_visual_feedback: true
+# replan_sampler_params: 
+#   mean: [0, 0, 0]
+#   std: [0.00718885, 0.011, 0.000]
+#   num_samples: 100
+#   num_iterations: 1
+#   gamma: 100
+#   num_repeat: 1
+#   horizon: 30
+#   beta: 0.2
+
+# initial_sampler_params: 
+#   mean: [0, 0, 0]
+#   old_std: [0.01418885, 0.022, 0.000]
+#   std: [0.03, 0.03, 0.000]
+#   num_samples: 500
+#   num_iterations: 5
+#   gamma: 100
+#   num_repeat: 5
+#   horizon: 30
+#   beta: 0.3
+
+# initial_ee_pos: [0.5, 0, 0.32]
+# pushing_initialization_pos: [0.5, 0, 0.325]

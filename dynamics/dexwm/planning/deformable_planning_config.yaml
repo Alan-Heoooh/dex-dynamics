@@ -1,0 +1,120 @@
+exp_name: exps/planning
+debug: false
+
+log_every: 1
+visualize_k: 1
+
+# filter_objects: ["mustard_bottle"] #"tomato_soup_can", "sugar_box", "bowl", ] #"sugar_box"]
+# test_file_path: "20200709-subject-01/20200709_143211"
+
+# pretrained_path: "/mnt/dynamics/exps/random_initial_frame+negative_data_10%/train_tb_logs/random_initial_frame+negative_data_10%/version_0/checkpoints/epoch=240-step=14219-val_loss=0.00843.ckpt"
+
+# pretrained_path: "/mnt/dynamics/exps/aug_random_initial_frame+negative_data_10%/train_tb_logs/aug_random_initial_frame+negative_data_10%/version_0/checkpoints/epoch=105-step=62540-val_loss=0.00805.ckpt"
+
+# pretrained_path: "/mnt/dynamics/exps/random_initial_frame+negative_data_50%/train_tb_logs/random_initial_frame+negative_data_50%/version_0/checkpoints/epoch=195-step=15876-val_loss=0.00804.ckpt" # relative good
+
+# pretrained_path: "/mnt/dynamics/exps/random_initial_frame+negative_data/train_tb_logs/random_initial_frame+negative_data/version_0/checkpoints/epoch=242-step=28431-val_loss=0.00764.ckpt"
+
+# pretrained_path: "/mnt/dynamics/exps/aug_random_initial_frame+negative_data_50%/train_tb_logs/aug_random_initial_frame+negative_data_50%/version_0/checkpoints/epoch=44-step=36225-val_loss=0.00775.ckpt"
+
+# pretrained_path: "/mnt/dynamics/exps/random_initial_frame+negative_data_50%_total/train_tb_logs/random_initial_frame+negative_data_50%_total/version_0/checkpoints/epoch=167-step=19488-val_loss=0.00833.ckpt"
+
+# pretrained_path: "/mnt/dynamics/exps/aug_on_the_fly_random_initial_frame+negative_data_50%_knn_distance_limit/train_tb_logs/aug_on_the_fly_random_initial_frame+negative_data_50%_knn_distance_limit/version_0/checkpoints/epoch=181-step=14742-val_loss=0.00840.ckpt"
+
+# pretrained_path: "/mnt/dynamics/exps/aug_on_the_fly_random_initial_frame+negative_data_50%_knn_distance_limit_2/train_tb_logs/aug_on_the_fly_random_initial_frame+negative_data_50%_knn_distance_limit_2/version_0/checkpoints/epoch=189-step=22040-val_loss=0.00858.ckpt"
+
+# pretrained_path: "/mnt/dynamics/exps/aug_on_the_fly_hand_sampling_augment/train_tb_logs/aug_on_the_fly_hand_sampling_augment/version_6/checkpoints/epoch=202-step=23548-val_loss=0.00837.ckpt"
+
+pretrained_path: "/mnt/dynamics/exps/aug_on_the_fly_hand_obj_sampling_augment/train_tb_logs/aug_on_the_fly_hand_obj_sampling_augment/version_2/checkpoints/epoch=151-step=16720-val_loss=0.00780.ckpt"
+
+dynamics_config_path: "/mnt/dynamics/exps/aug_on_the_fly_hand_obj_sampling_augment/train_tb_logs/aug_on_the_fly_hand_obj_sampling_augment/version_2/hparams.yaml"
+
+action_dim: 12 # TODO
+horizon: 3 # 1
+# history_len: 30
+
+test_batch_size: 1
+
+num_execution_iterations: 30 # 30
+num_samples: 100 # 40
+sample_batch_size: 20
+beta: 0.3
+gamma: 1.0
+
+# TODO: check reward format, should be only one reward from final state
+
+init_std: [
+            0.05, 0.05, 0.05,  # wrist position
+            0., 0., 0.05,   # wrist orientation
+            0., 0.1, 0., 0., 0., 0.1    # hand joint angles
+          ] # heuristic setting for initial hand pose
+
+
+# init_std: [
+#             0.05, 0.05, 0.05,  # wrist position
+#             0., 0., 0.05,   # wrist orientation
+#             0.1, 0.1, 0., 0., 0., 0.1    # hand joint angles
+#           ]
+
+# ee 6dim + hand 6dim TODO:
+# init_action: [0.1, 0, -0.08, 0, -90, 45, -1.5, 1., 0, 0, 0, 1]
+init_action: [0.05, -0.05, -0.135, 0, -50, 0, -1.4, 0.4, 0, 0, 0, 0.35] # heuristic setting for initial hand pose
+# init_action: [0.05, -0.05, -0.135, 0, -50, 0, -1.4, 0, 0, 0, 0, 0]
+
+# position (m), orientation (deg), parameterrs (unit)
+# action_limit: [0.01, 0.01, 0.01, 5, 5, 5, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+action_limit: [0., 0., 0, 0, 0, 5, 2, 2, 0, 0, 0, 2]
+# action_limit: [0., 0., 0, 0, 0, 5, 0, 2, 0, 0, 0, 2]
+
+
+update_std: False
+predict_type: "ability_hand_right" # "hand"
+
+loss:
+  names: ["pointcloud"]
+  weights: [10.]
+  last_states: [0, 0, 0, 0, 0, 0, 0]
+  eval: "pointcloud"
+  radius: 0.01
+  decay_factor: 0.99
+  penetration_weight: 0.5 # 0.5 #  2
+  attraction_weight: 0.5 #0.05
+  penetration_threshold: -0.02
+
+
+
+# object_pose: 
+#   p: [0.45, 0.16, 0.08]
+#   q: [1, 0, 0, 0]
+
+# goal_offset: [0, 0, 0.15]
+
+# mesh: ""
+
+# goal: 
+#   position: [0.5, -0.2, 0.025]
+#   orientation: [0, 0, 0]
+# use_visual_feedback: true
+# replan_sampler_params: 
+#   mean: [0, 0, 0]
+#   std: [0.00718885, 0.011, 0.000]
+#   num_samples: 100
+#   num_iterations: 1
+#   gamma: 100
+#   num_repeat: 1
+#   horizon: 30
+#   beta: 0.2
+
+# initial_sampler_params: 
+#   mean: [0, 0, 0]
+#   old_std: [0.01418885, 0.022, 0.000]
+#   std: [0.03, 0.03, 0.000]
+#   num_samples: 500
+#   num_iterations: 5
+#   gamma: 100
+#   num_repeat: 5
+#   horizon: 30
+#   beta: 0.3
+
+# initial_ee_pos: [0.5, 0, 0.32]
+# pushing_initialization_pos: [0.5, 0, 0.325]

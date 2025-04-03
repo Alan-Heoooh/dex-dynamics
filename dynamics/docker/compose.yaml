@@ -1,0 +1,12 @@
+name: playground
+
+services:
+  base:
+    extends:
+      file: compose_base.yaml
+      service: gpu-gui
+    image: alanheoooh/dynamics:test
+    build:
+      context: .
+      args:
+        BASE_IMAGE: nvidia/cuda:12.1.1-devel-ubuntu22.04
