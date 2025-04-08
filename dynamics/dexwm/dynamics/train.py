@@ -47,6 +47,8 @@ def train(config, save_dir):
     else:
         logger = [tensorboard_logger]
 
+    # import pdb; pdb.set_trace()
+
     # train model
     trainer = pl.Trainer(
         max_epochs=config["optimizer"]["max_epoch"],
@@ -97,10 +99,11 @@ def test(config, stats, save_dir, best_model_path):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="dynamics")
+    print("dynamics dir:", DYNAMICS_DIR)
     parser.add_argument(
         "-c",
         "--config",
-        default=os.path.join(DYNAMICS_DIR, "deformable_dynamics_config.yaml"),
+        default=os.path.join(DYNAMICS_DIR, "deformable_dynamics_config_1.yaml"),
         type=str,
         help="config file path (default: dynamics_config.yaml)",
     )

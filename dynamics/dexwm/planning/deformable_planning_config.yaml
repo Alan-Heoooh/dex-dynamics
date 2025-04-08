@@ -25,9 +25,9 @@ visualize_k: 1
 
 # pretrained_path: "/mnt/dynamics/exps/aug_on_the_fly_hand_sampling_augment/train_tb_logs/aug_on_the_fly_hand_sampling_augment/version_6/checkpoints/epoch=202-step=23548-val_loss=0.00837.ckpt"
 
-pretrained_path: "/mnt/dynamics/exps/aug_on_the_fly_hand_obj_sampling_augment/train_tb_logs/aug_on_the_fly_hand_obj_sampling_augment/version_2/checkpoints/epoch=151-step=16720-val_loss=0.00780.ckpt"
+pretrained_path: "/home/coolbot/Documents/git/dex-dynamics/dynamics/exps/aug_on_the_fly_hand_obj_sampling_augment/train_tb_logs/aug_on_the_fly_hand_obj_sampling_augment/version_13/checkpoints/epoch=217-step=23980-val_loss=0.00760.ckpt"
 
-dynamics_config_path: "/mnt/dynamics/exps/aug_on_the_fly_hand_obj_sampling_augment/train_tb_logs/aug_on_the_fly_hand_obj_sampling_augment/version_2/hparams.yaml"
+dynamics_config_path: "/home/coolbot/Documents/git/dex-dynamics/dynamics/exps/aug_on_the_fly_hand_obj_sampling_augment/train_tb_logs/aug_on_the_fly_hand_obj_sampling_augment/version_13/hparams.yaml"
 
 action_dim: 12 # TODO
 horizon: 3 # 1
@@ -35,7 +35,7 @@ horizon: 3 # 1
 
 test_batch_size: 1
 
-num_execution_iterations: 30 # 30
+num_execution_iterations: 10 # 30
 num_samples: 100 # 40
 sample_batch_size: 20
 beta: 0.3
@@ -58,7 +58,8 @@ init_std: [
 
 # ee 6dim + hand 6dim TODO:
 # init_action: [0.1, 0, -0.08, 0, -90, 45, -1.5, 1., 0, 0, 0, 1]
-init_action: [0.05, -0.05, -0.135, 0, -50, 0, -1.4, 0.4, 0, 0, 0, 0.35] # heuristic setting for initial hand pose
+# init_action: [0.05, -0.05, -0.135, 0, -50, 0, -1.4, 0.4, 0, 0, 0, 0.35] # heuristic setting for initial hand pose
+init_action: [0.06, -0.02, -0.1, 0, -90, 90, -1.4, 0.4, 0, 0, 0, 0.35] # heuristic setting for initial hand pose
 # init_action: [0.05, -0.05, -0.135, 0, -50, 0, -1.4, 0, 0, 0, 0, 0]
 
 # position (m), orientation (deg), parameterrs (unit)

@@ -7,12 +7,6 @@ from pathlib import Path
 ROOT_DIR = Path(__file__).parent.parent
 print(f"ROOT_DIR = {ROOT_DIR}")
 
-# # soft link pointing to data directory
-# DATA_DIR = os.path.join(
-#     os.path.abspath(os.path.join(os.path.dirname(__file__), "..")), "data"
-# )
-# DATA_DIR = "/sailhome/boai/project_folder/bubble_data"
-# DATA_DIR = os.path.join(ROOT_DIR, "data")
 ASSETS_DIR = os.path.join(ROOT_DIR, "assets")
 RESULT_DIR = os.path.join(ROOT_DIR, "results")
 SCRIPT_DIR = os.path.join(ROOT_DIR, "scripts")

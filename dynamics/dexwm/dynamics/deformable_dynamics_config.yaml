@@ -9,7 +9,7 @@ test_only: false
 pretrained_path: 
 
 # data_dir: "/data/hand_obj_ret_0326_integrated/"
-data_dir: "/data/hand_obj_ret_0331_obj_dense/"
+data_dir: "/home/coolbot/data/hand_obj_ret_0331_obj_dense/"
 
 # data_dir_prefix: dexycb
 rebuild_dataset: true
@@ -23,7 +23,7 @@ data_augment: true
 # num_augment: 10
 augment_along_z_axis: true
 hand_sampling_augment: true
-object_sampling_augment: true
+object_sampling_augment: true        
 
 # negative data
 negative_data: true

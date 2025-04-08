@@ -37,8 +37,6 @@ class DeformableDataset(pyg.data.InMemoryDataset):
         return [f"deformable_{self.split}"]
 
     def process(self):
-        # tips_region = np.load(f"{ASSETS_DIR}/fingers.npy")
-
         hand_pcld_sampler = HandPcldWrapper(
             particles_per_hand=self.config["particles_per_hand"],
             num_samples=1,
@@ -191,13 +189,19 @@ class DeformableDataset(pyg.data.InMemoryDataset):
                 # load hand mesh, assume one hand
                 hand_verts_seq = [torch.FloatTensor(hand_obj_ret["hand_init_pcd"]), torch.FloatTensor(hand_obj_ret["hand_final_pcd"])] # (T, 778, 3)
 
+                obj_init_pcd = hand_obj_ret["object_init_pcd"]
+                obj_init_pcd_center = obj_init_pcd.mean(axis=0) # (3,)
+                obj_pcd_seq = [obj_pcd - obj_init_pcd_center for obj_pcd in obj_pcd_seq]
+                hand_verts_seq = [hand_verts - obj_init_pcd_center for hand_verts in hand_verts_seq]
+
+
                 obj_pcd_seq = torch.stack(obj_pcd_seq, dim=0) # (T, n, 3)
                 hand_verts_seq = torch.stack(hand_verts_seq, dim=0) # (T, 778, 3)
 
                 obj_pcd = obj_pcd_seq.permute(1, 0, 2)  # (n, T,  3)
                 hand_verts = hand_verts_seq.permute(1, 0, 2)  # (778, T, 3)
 
-                 # sample hand particles
+                # sample hand particles
                 hand_sample_indices = None
                 _, hand_sample_indices = furthest_point_sampling(
                     hand_verts[:, 0], self.config["particles_per_hand"]
@@ -237,10 +241,10 @@ class DeformableDataset(pyg.data.InMemoryDataset):
                         edge_attr=edge_attr,
                         pos=total_pcd[:, seq_start : seq_start + self.config[f"{self.split}_sequence_length"] + 1], # point cloud position of object and hand
 
-                        obj_init_pcd = hand_obj_ret["object_init_pcd"],
-                        obj_final_pcd = hand_obj_ret["object_final_pcd"],
-                        hand_init_pcd = hand_pcd[:, 0],
-                        hand_final_pcd = hand_pcd[:, 1],
+                        obj_init_pcd = obj_pcd_seq[0].cpu().numpy(),
+                        obj_final_pcd = obj_pcd_seq[1].cpu().numpy(),
+                        # hand_init_pcd = hand_pcd[:, 0],
+                        # hand_final_pcd = hand_pcd[:, 1],
                     )
 
                     data_list.append(graph_data)
@@ -395,5 +399,5 @@ class DeformableDataModule(pl.LightningDataModule):
             self.predict,
             batch_size=self.config["test_batch_size"],
             num_workers=self.config["num_workers"],
+            shuffle=True,
         )
-

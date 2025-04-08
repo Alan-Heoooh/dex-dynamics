@@ -1,44 +1,27 @@
 import os
 import sys
-
+import time
 import argparse
+import wandb
 
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(project_root)
 
-
 from planning.cost_functions import CostFunction
-
 from utils.macros import PLANNING_DIR
 from planning.samplers import *
 from planning.planner import MPPIOptimizer
-from dynamics.dataset import DexYCBDataModule, DeformableDataModule
+from dynamics.dataset import DeformableDataModule
 from dynamics.config_parser import ConfigParser
-import time
-
 from dynamics.models import DynamicsPredictor
 from utils.utils import *
 from utils.visualizer import *
 
 from dexwm.utils.pcld_wrapper import HandPcldWrapper
 from dexwm.utils.pcld_wrapper.robot_pcld import RobotPcldWrapper
-
-import wandb
 from torch.utils.tensorboard import SummaryWriter
 
 torch.set_float32_matmul_precision("medium")
-
-# device='cuda'
-
-# a_dim = 3
-# act_feat_len = 3
-# box_target_position = np.array([0.5 - 0.1, -0.1 + 0.3, 0]) # np.array([0.35, 0., 0])       # the origin is (0.5, 0)
-# box_target_position = [0.4 + 0.2, 0, 0]  # np.array([0.4, -0.2, 0])
-# box_target_orientation = [0, 0, 45]
-# np.array([0.5 - 0.10, -0.1 + 0.4, 0])
-# np.array([0.5 - 0.20, -0.1 + 0.3, 0])
-# np.array([0.5 + 0.15, -0.1 + 0.3, 0])
-# np.array([0.5 - 0.05, -0.1 + 0.5, 0])
 
 
 class Logger:
@@ -79,16 +62,11 @@ def test_planning(config, save_dir):
     config.update_from_yaml(config["dynamics_config_path"])
     config._config["debug"] = debug
 
-    # import pdb; pdb.set_trace()
-
     assert config["test_batch_size"] == 1, "test batch size must be 1"
 
     # save config
     write_yaml(config, f"{save_dir}/{run_name}/config.yaml")
 
-    # import pdb; pdb.set_trace()
-
-    # data_module = DeformableDataModule(config)
     data_module = DeformableDataModule(config)
     data_module.prepare_data()
     data_module.setup("predict")
@@ -113,12 +91,14 @@ def test_planning(config, save_dir):
             particles_per_hand=config["particles_per_hand"],
             num_samples=config["num_samples"],
         )
-    else:
+    elif config["predict_type"] == "ability_hand_right":
         point_cloud_wrapper = RobotPcldWrapper(
             config["predict_type"],
             particles_per_hand=config["particles_per_hand"],
             num_samples=config["num_samples"],
         )
+    else:
+        raise ValueError(f"Unknown predict type: {config['predict_type']}")
 
     cost_function = CostFunction(
         config=config,
@@ -158,16 +138,11 @@ def test_planning(config, save_dir):
         # object_type_feat,
         # vision_feature,
         # node_pos,
-        # tac_feat_bubbles,
-        # tactile_feat_all_points,
-        # ),
         # action_history=action_hist,
         # goal=goal,
         visualize_k=config["visualize_k"],
         return_best=True,
     )
-
-    # import pdb; pdb.set_trace()
 
     return best_actions
 
