@@ -10,12 +10,12 @@ from mani_skill.sensors.camera import CameraConfig
 from mani_skill.utils import common, sapien_utils
 from mani_skill.utils.registration import register_env
 from mani_skill.utils.structs.types import SimConfig, GPUMemoryConfig
-from ..robot import AbilityHandRight
+from ..robot import AbilityHandRight, XHandRight
 
 
 @register_env("CustomEnv-v1", max_episode_steps=200)
 class CustomEnv(BaseEnv):
-    SUPPORTED_ROBOTS = ["panda", "fetch", "ability_hand_right"]
+    SUPPORTED_ROBOTS = ["panda", "fetch", "ability_hand_right", "xhand_right"]
     agent: Union[Panda, Fetch]
 
     def __init__(self, *args, robot_uids="panda", robot_init_qpos_noise=0.02, **kwargs):
@@ -58,9 +58,9 @@ class CustomEnv(BaseEnv):
 
     def _initialize_episode(self, env_idx: torch.Tensor, options: dict):
         # pass
-        init_qpos = torch.tensor(
-            [0, 0, 0, 0, 0, 0, 0.7235, 0.7235, 0.7235, 0.7235], device=self.device
-        )
+        # TODO:
+        init_qpos = torch.tensor([0, 0, 0, 0, 0, 0, 0.7235, 0.7235, 0.7235, 0.7235], device=self.device) # ability hand
+        # init_qpos = torch.tensor([0.7235, 0.7235, 0.7235, 0.7235, 0.7235, 0.7235, 0.7235, 0.7235, 0.7235, 0.7235, 0.7235, 0.7235], device=self.device) # xhand 
         with torch.device(self.device):
             self.agent.reset(init_qpos)
 

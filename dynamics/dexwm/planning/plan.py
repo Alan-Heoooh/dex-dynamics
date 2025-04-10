@@ -91,7 +91,7 @@ def test_planning(config, save_dir):
             particles_per_hand=config["particles_per_hand"],
             num_samples=config["num_samples"],
         )
-    elif config["predict_type"] == "ability_hand_right":
+    elif config["predict_type"] == "ability_hand_right" or config["predict_type"] == "xhand_right":
         point_cloud_wrapper = RobotPcldWrapper(
             config["predict_type"],
             particles_per_hand=config["particles_per_hand"],

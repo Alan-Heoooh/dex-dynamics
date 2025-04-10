@@ -10,13 +10,9 @@ sys.path.append(project_root)
 # from queue import Queue
 # from wis3d import Wis3D
 from dexwm.utils.wis3d_new import Wis3D
-from torch_geometric.data import Batch
 from dexwm.utils.geometry import aligned_points_to_transformation_matrix
-
-# from perception.utils_cv import find_point_on_line
-import trimesh
 from dexwm.utils.pcld_wrapper import PcldWrapper
-
+from dexwm.utils.utils_3d import rot_euler2axangle
 
 def convert_state_dict_to_state_list(predictions_dict):
     """
@@ -77,15 +73,13 @@ class MPPIOptimizer:
         self.update_std = config["update_std"]
         self.config = config
         self.logger = logger
-
         self.device = device
 
         self.debug = config["debug"]
 
-        action_limit = np.array(self.config["action_limit"])
-        action_limit[3:6] = np.deg2rad(action_limit[3:6])
-
-        self.init_std = np.array(init_std) * action_limit
+        self.init_std = np.array(init_std).astype(np.float32)
+        self.init_std[3:6] = np.deg2rad(self.init_std[3:6])
+        self.init_std[3:6] = rot_euler2axangle(self.init_std[3:6], axes="sxyz")
 
         # if len(self.init_std.shape) == 0:  # a single number
         #     self.init_std = (
@@ -97,6 +91,13 @@ class MPPIOptimizer:
         self.init_std = np.expand_dims(self.init_std, 0).repeat(self.horizon, axis=0)
         # else:
         #     raise NotImplementedError(f"Unknow std shape {self.init_std.shape}")
+
+        """initialize point cloud wrapper"""
+        self.init_action = np.array(config["init_action"]).astype(np.float32)
+        self.init_action[3:6] = np.deg2rad(self.init_action[3:6])
+        self.init_action[3:6] = rot_euler2axangle(self.init_action[3:6], axes="sxyz")
+        self.init_action = torch.FloatTensor(self.init_action).to(self.device)
+        self.point_cloud_wrapper.set_init_params(action_vec=self.init_action)
 
         self.log_every = log_every
         self._model_prediction_times = list()
@@ -151,12 +152,6 @@ class MPPIOptimizer:
             gt_init_hand_pos = observation_batch.hand_init_pcd # (n_hand_points, 3)
             gt_target_hand_pos = observation_batch.hand_final_pcd # (n_hand_points, 3)
         
-        """initialize point cloud wrapper"""
-        initial_action = torch.FloatTensor(self.config["init_action"]).to(self.device)
-        # convert the degree to radian
-        initial_action[3:6] = torch.deg2rad(initial_action[3:6])
-        self.point_cloud_wrapper.set_init_params(action_vec=initial_action)
-
         """sample object point cloud and obtain the initial graph"""
         init_hand_pos = self.point_cloud_wrapper.forward()[0]  # (n_hands, 3)
 
@@ -178,10 +173,6 @@ class MPPIOptimizer:
             dim=0,
         ).to(self.device)
 
-        # if self.config["mask_fingertips"]:
-        #     is_finger_masks = self.point_cloud_wrapper.is_finger_masks
-        #     particle_type[self.config["particles_per_obj"] :][is_finger_masks] = 2
-
         mu = np.zeros((self.horizon, self.a_dim))
         std = self.init_std
 
@@ -193,7 +184,6 @@ class MPPIOptimizer:
                 self.num_samples, mu, std
             )  # (B, T, n_actions)
 
-            # action_samples = np.clip(latent_action_samples, -0.006, 0.006)
 
             self.point_cloud_wrapper.reset()
             
@@ -264,8 +254,6 @@ class MPPIOptimizer:
                 # mesh_file_path=observation_batch.obj_mesh_path[0],
                 action=torch.from_numpy(latent_action_samples).to(self.device),
             )  # shape [num_samples, 1, 1]
-
-            # import pdb; pdb.set_trace()
 
             if self.debug:
                 wis3d = Wis3D(

@@ -29,8 +29,7 @@ pretrained_path: "/home/coolbot/Documents/git/dex-dynamics/dynamics/exps/aug_on_
 
 dynamics_config_path: "/home/coolbot/Documents/git/dex-dynamics/dynamics/exps/aug_on_the_fly_hand_obj_sampling_augment/train_tb_logs/aug_on_the_fly_hand_obj_sampling_augment/version_13/hparams.yaml"
 
-action_dim: 12 # TODO
-horizon: 3 # 1
+horizon: 1 # 1
 # history_len: 30
 
 test_batch_size: 1
@@ -41,35 +40,42 @@ sample_batch_size: 20
 beta: 0.3
 gamma: 1.0
 
-# TODO: check reward format, should be only one reward from final state
+predict_type: "ability_hand_right"
+# predict_type: "xhand_right"
+
+######################################################################
+#                            Ability Hand Right                      #
+######################################################################
+action_dim: 12 
 
 init_std: [
-            0.05, 0.05, 0.05,  # wrist position
-            0., 0., 0.05,   # wrist orientation
-            0., 0.1, 0., 0., 0., 0.1    # hand joint angles
-          ] # heuristic setting for initial hand pose
+            0.0, 0.0, 0.0,  # wrist position
+            0., 0., 0.,   # wrist orientation
+            0., 0.2, 0., 0., 0., 0.2    # hand joint angles
+          ]
 
+# ee 6dim + hand 6dim
+# (x, y, z, roll, pitch, yaw, finger1, finger2, finger3, finger4, finger5, finger6)
+init_action: [0.06, -0.02, -0.1, 0, -50, 0, -1.4, 0.4, 0, 0, 0, 0.35] # heuristic setting for initial hand pose
+# init_action: [0.02, 0.06, -0.1, 0, -50, 90, -1.4, 0.4, 0, 0, 0, 0.35] # heuristic setting for initial hand pose
+
+######################################################################
+#                           Xhand Right                              #
+######################################################################
+# action_dim: 18
 
 # init_std: [
-#             0.05, 0.05, 0.05,  # wrist position
-#             0., 0., 0.05,   # wrist orientation
-#             0.1, 0.1, 0., 0., 0., 0.1    # hand joint angles
+#             0.0, 0.0, 0.0,  # wrist position
+#             0., 0., 10.0,   # wrist orientation
+#             0, 0, 0., 0., 0., 0, 0, 0, 0., 0., 0., 0.  # hand joint angles
 #           ]
 
-# ee 6dim + hand 6dim TODO:
-# init_action: [0.1, 0, -0.08, 0, -90, 45, -1.5, 1., 0, 0, 0, 1]
-# init_action: [0.05, -0.05, -0.135, 0, -50, 0, -1.4, 0.4, 0, 0, 0, 0.35] # heuristic setting for initial hand pose
-init_action: [0.06, -0.02, -0.1, 0, -90, 90, -1.4, 0.4, 0, 0, 0, 0.35] # heuristic setting for initial hand pose
-# init_action: [0.05, -0.05, -0.135, 0, -50, 0, -1.4, 0, 0, 0, 0, 0]
-
-# position (m), orientation (deg), parameterrs (unit)
-# action_limit: [0.01, 0.01, 0.01, 5, 5, 5, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
-action_limit: [0., 0., 0, 0, 0, 5, 2, 2, 0, 0, 0, 2]
-# action_limit: [0., 0., 0, 0, 0, 5, 0, 2, 0, 0, 0, 2]
-
+# init_action: [0.06, -0.02, -0.1, # x, y, z
+#               90, 0, 0, # roll, pitch, yaw
+#               1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, # hand joint angles
+#             ]
 
 update_std: False
-predict_type: "ability_hand_right" # "hand"
 
 loss:
   names: ["pointcloud"]
