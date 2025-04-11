@@ -36,12 +36,13 @@ test_batch_size: 1
 
 num_execution_iterations: 10 # 30
 num_samples: 100 # 40
+num_z_rotations: 8
 sample_batch_size: 20
 beta: 0.3
 gamma: 1.0
 
-predict_type: "ability_hand_right"
-# predict_type: "xhand_right"
+# predict_type: "ability_hand_right"
+predict_type: "xhand_right"
 
 ######################################################################
 #                            Ability Hand Right                      #
@@ -62,18 +63,18 @@ init_action: [0.06, -0.02, -0.1, 0, -50, 0, -1.4, 0.4, 0, 0, 0, 0.35] # heuristi
 ######################################################################
 #                           Xhand Right                              #
 ######################################################################
-# action_dim: 18
+action_dim: 18
 
-# init_std: [
-#             0.0, 0.0, 0.0,  # wrist position
-#             0., 0., 10.0,   # wrist orientation
-#             0, 0, 0., 0., 0., 0, 0, 0, 0., 0., 0., 0.  # hand joint angles
-#           ]
+init_std: [
+            0.0, 0.0, 0.0,  # wrist position
+            0., 0., 0.0,   # wrist orientation
+            0.2, 0, 0., 0., 0., 0.2, 0.2, 0, 0., 0., 0., 0.  # hand joint angles
+          ]
 
-# init_action: [0.06, -0.02, -0.1, # x, y, z
-#               90, 0, 0, # roll, pitch, yaw
-#               1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, # hand joint angles
-#             ]
+init_action: [0.06, -0.02, -0.1, # x, y, z
+              90, 0, 90, # roll, pitch, yaw
+              1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, # hand joint angles
+            ]
 
 update_std: False
 
