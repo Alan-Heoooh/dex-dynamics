@@ -20,6 +20,7 @@ class CustomEnv(BaseEnv):
 
     def __init__(self, *args, robot_uids="panda", robot_init_qpos_noise=0.02, **kwargs):
         self.robot_init_qpos_noise = robot_init_qpos_noise
+        self.robot_uids = robot_uids
         super().__init__(*args, robot_uids=robot_uids, **kwargs)
 
     # def reset(self, **kwargs):
@@ -58,9 +59,12 @@ class CustomEnv(BaseEnv):
 
     def _initialize_episode(self, env_idx: torch.Tensor, options: dict):
         # pass
-        # TODO:
-        init_qpos = torch.tensor([0, 0, 0, 0, 0, 0, 0.7235, 0.7235, 0.7235, 0.7235], device=self.device) # ability hand
-        # init_qpos = torch.tensor([0.7235, 0.7235, 0.7235, 0.7235, 0.7235, 0.7235, 0.7235, 0.7235, 0.7235, 0.7235, 0.7235, 0.7235], device=self.device) # xhand 
+        if self.robot_uids == "ability_hand_right":
+            init_qpos = torch.tensor([0, 0, 0, 0, 0, 0, 0.7235, 0.7235, 0.7235, 0.7235], device=self.device) # ability hand
+        elif self.robot_uids == "xhand_right":
+            init_qpos = torch.tensor([0.7235, 0.7235, 0.7235, 0.7235, 0.7235, 0.7235, 0.7235, 0.7235, 0.7235, 0.7235, 0.7235, 0.7235], device=self.device) # xhand 
+        else:
+            raise NotImplementedError(f"Robot {self.robot_uids} not implemented")
         with torch.device(self.device):
             self.agent.reset(init_qpos)
 

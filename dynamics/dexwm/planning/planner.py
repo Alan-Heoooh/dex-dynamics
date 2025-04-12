@@ -56,7 +56,6 @@ class MPPIOptimizer:
         config,
         logger,
         num_iters=3,
-        init_std=0.5,
         log_every=1,
         device="cuda",
     ):
@@ -77,6 +76,10 @@ class MPPIOptimizer:
 
         self.debug = config["debug"]
 
+        self.robot_type = config["robot_type"]
+        robot_config = config["robots"][self.robot_type]
+        init_std = robot_config["init_std"]
+
         self.init_std = np.array(init_std).astype(np.float32)
         self.init_std[3:6] = np.deg2rad(self.init_std[3:6])
         self.init_std[3:6] = rot_euler2axangle(self.init_std[3:6], axes="sxyz")
@@ -93,7 +96,7 @@ class MPPIOptimizer:
         #     raise NotImplementedError(f"Unknow std shape {self.init_std.shape}")
 
         """initialize point cloud wrapper"""
-        self.init_action = np.array(config["init_action"]).astype(np.float32)
+        self.init_action = np.array(robot_config["init_action"]).astype(np.float32)
         self.init_action[3:6] = np.deg2rad(self.init_action[3:6])
 
         self.log_every = log_every
@@ -196,7 +199,7 @@ class MPPIOptimizer:
             std = self.init_std
 
             best_action, best_action_prediction = None, None
-            best_reward = float('-inf')
+            best_reward = float('inf')
             
             # Run MPPI iterations for current Z-axis rotation
             for iter in range(self.num_iters):
@@ -388,16 +391,13 @@ class MPPIOptimizer:
         # Find the best Z-axis rotation among all those tried
         best_z_idx = np.argmin(all_z_best_rewards)  # Lower reward (cost) is better
         best_z_rotation = z_rotations[best_z_idx]
-        best_z_reward = all_z_best_rewards[best_z_idx]
+        best_z_reward = all_z_best_rewards[best_z_idx].item()
         best_action = all_z_best_actions[best_z_idx]
         best_action_prediction = all_z_best_predictions[best_z_idx]
+
+        # import pdb; pdb.set_trace()
         
-        print(f"\nAll Z-axis optimizations complete. Best rotation: {best_z_rotation:.2f}rad ({np.degrees(best_z_rotation):.1f}°), Reward: {best_z_reward:.4f}")
-        
-        # Log final results
-        self.logger.add_scalar("final/best_z_rotation_rad", best_z_rotation)
-        self.logger.add_scalar("final/best_z_rotation_deg", np.degrees(best_z_rotation))
-        self.logger.add_scalar("final/best_reward", best_z_reward)
+        print(f"\nAll Z-axis optimizations complete. Best rotation: {best_z_rotation:.2f}rad ({np.degrees(best_z_rotation):.1f}°), Reward: {best_z_reward:.4f} index: {best_z_idx}")
         
         # Save the global best result
         os.makedirs(f"{log_dir}/best_plans/final", exist_ok=True)

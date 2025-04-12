@@ -79,26 +79,28 @@ def test_planning(config, save_dir):
     batch = next(data_iter).to(device)
 
     horizon = config["horizon"]
-    action_dim = config["action_dim"]
+    robot_type = config["robot_type"]
+    robot_config = config["robots"][robot_type]
+    action_dim = robot_config["action_dim"]
 
     # build a planner
     # first build a sampler
     sampler = CorrelatedNoiseSampler(a_dim=action_dim, beta=config["beta"], horizon=horizon, num_repeat=1)
     # sampler = GaussianSampler(horizon=horizon, a_dim=action_dim)
 
-    if config["predict_type"] == "hand":
+    if config["robot_type"] == "hand":
         point_cloud_wrapper = HandPcldWrapper(
             particles_per_hand=config["particles_per_hand"],
             num_samples=config["num_samples"],
         )
-    elif config["predict_type"] == "ability_hand_right" or config["predict_type"] == "xhand_right":
+    elif config["robot_type"] == "ability_hand_right" or config["robot_type"] == "xhand_right":
         point_cloud_wrapper = RobotPcldWrapper(
-            config["predict_type"],
+            config["robot_type"],
             particles_per_hand=config["particles_per_hand"],
             num_samples=config["num_samples"],
         )
     else:
-        raise ValueError(f"Unknown predict type: {config['predict_type']}")
+        raise ValueError(f"Unknown predict type: {config['robot_type']}")
 
     cost_function = CostFunction(
         config=config,
@@ -119,7 +121,7 @@ def test_planning(config, save_dir):
         num_samples=config["num_samples"],
         gamma=config["gamma"],  # the larger the more exploitation
         num_iters=config["num_execution_iterations"],
-        init_std=config["init_std"],
+        # init_std=config["init_std"],
         config=config,
         log_every=config["log_every"],
         logger=logger,

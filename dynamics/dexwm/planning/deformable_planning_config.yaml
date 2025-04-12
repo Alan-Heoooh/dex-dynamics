@@ -35,48 +35,40 @@ horizon: 1 # 1
 test_batch_size: 1
 
 num_execution_iterations: 10 # 30
-num_samples: 100 # 40
-num_z_rotations: 8
+num_samples: 20
+num_z_rotations: 2
 sample_batch_size: 20
 beta: 0.3
 gamma: 1.0
 
-# predict_type: "ability_hand_right"
-predict_type: "xhand_right"
-
-######################################################################
-#                            Ability Hand Right                      #
-######################################################################
-action_dim: 12 
-
-init_std: [
-            0.0, 0.0, 0.0,  # wrist position
-            0., 0., 0.,   # wrist orientation
-            0., 0.2, 0., 0., 0., 0.2    # hand joint angles
-          ]
-
-# ee 6dim + hand 6dim
-# (x, y, z, roll, pitch, yaw, finger1, finger2, finger3, finger4, finger5, finger6)
-init_action: [0.06, -0.02, -0.1, 0, -50, 0, -1.4, 0.4, 0, 0, 0, 0.35] # heuristic setting for initial hand pose
-# init_action: [0.02, 0.06, -0.1, 0, -50, 90, -1.4, 0.4, 0, 0, 0, 0.35] # heuristic setting for initial hand pose
-
-######################################################################
-#                           Xhand Right                              #
-######################################################################
-action_dim: 18
-
-init_std: [
-            0.0, 0.0, 0.0,  # wrist position
-            0., 0., 0.0,   # wrist orientation
-            0.2, 0, 0., 0., 0., 0.2, 0.2, 0, 0., 0., 0., 0.  # hand joint angles
-          ]
-
-init_action: [0.06, -0.02, -0.1, # x, y, z
-              90, 0, 90, # roll, pitch, yaw
-              1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, # hand joint angles
-            ]
-
 update_std: False
+
+robot_type: "xhand_right" # "ability_hand_right"
+robots:
+  ability_hand_right:
+    action_dim: 12
+    init_std: [
+                0.0, 0.0, 0.0,  # wrist position
+                0., 0., 0.,   # wrist orientation
+                0., 0.2, 0., 0., 0., 0.2    # hand joint angles
+              ]
+    init_action: [
+                    0.06, -0.02, -0.1,
+                    0, -50, 0, 
+                    -1.4, 0.4, 0, 0, 0, 0.35
+                  ] # heuristic setting for initial hand pose
+  xhand_right:
+    action_dim: 18
+    init_std: [
+                0.0, 0.0, 0.0,  # wrist position
+                0., 0., 0.0,   # wrist orientation
+                0.2, 0, 0., 0., 0., 0.2, 0.2, 0, 0., 0., 0., 0.  # hand joint angles
+              ]
+    init_action: [
+                  0.06, -0.02, -0.1, # x, y, z
+                  90, 0, 90, # roll, pitch, yaw
+                  1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0
+                ] # hand joint angles
 
 loss:
   names: ["pointcloud"]
