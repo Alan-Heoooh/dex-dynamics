@@ -67,7 +67,7 @@ robots:
     init_action: [
                   0.06, -0.02, -0.1, # x, y, z
                   90, 0, 90, # roll, pitch, yaw
-                  1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0
+                  1.4, 0, 0, 0, 0, 0.7, 1.3, 0, 0, 0, 0, 0
                 ] # hand joint angles
 
 loss:
