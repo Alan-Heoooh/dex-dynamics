@@ -1,15 +1,17 @@
 # log_name: aug_on_the_fly_random_initial_frame+negative_data_50%_knn_distance_limit_2
 # exp_name: exps/aug_on_the_fly_random_initial_frame+negative_data_50%_knn_distance_limit_2
 
-log_name: aug_on_the_fly_hand_obj_sampling_augment
-exp_name: exps/aug_on_the_fly_hand_obj_sampling_augment
+log_name: all_skills
+exp_name: exps/all_skills
 
 debug: false
 test_only: false
 pretrained_path: 
 
-# data_dir: "/data/hand_obj_ret_0326_integrated/"
-data_dir: "/home/coolbot/data/hand_obj_ret_0331_obj_dense/"
+# data_dir: "/home/coolbot/data/hand_obj_ret_0331_obj_dense/"
+# data_dir: "/home/coolbot/data/hand_obj_ret_0412_palm_press/"
+data_dir: "/home/coolbot/data/hand_obj_ret_0414_all/"
+
 
 # data_dir_prefix: dexycb
 rebuild_dataset: true
@@ -87,7 +89,7 @@ dpi_net:
 
 optimizer: 
     lr: 0.0001
-    max_epoch: 300
+    max_epoch: 1000
 train_batch_size: 4 # 16
 test_batch_size: 1
 visualize_every: 50

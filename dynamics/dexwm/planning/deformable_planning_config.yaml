@@ -4,30 +4,25 @@ debug: false
 log_every: 1
 visualize_k: 1
 
-# filter_objects: ["mustard_bottle"] #"tomato_soup_can", "sugar_box", "bowl", ] #"sugar_box"]
-# test_file_path: "20200709-subject-01/20200709_143211"
+# 2 fingers pinch
+# pretrained_path: "/home/coolbot/Documents/git/dex-dynamics/dynamics/exps/aug_on_the_fly_hand_obj_sampling_augment/train_tb_logs/aug_on_the_fly_hand_obj_sampling_augment/version_13/checkpoints/epoch=217-step=23980-val_loss=0.00760.ckpt"
+# dynamics_config_path: "/home/coolbot/Documents/git/dex-dynamics/dynamics/exps/aug_on_the_fly_hand_obj_sampling_augment/train_tb_logs/aug_on_the_fly_hand_obj_sampling_augment/version_13/hparams.yaml"
 
-# pretrained_path: "/mnt/dynamics/exps/random_initial_frame+negative_data_10%/train_tb_logs/random_initial_frame+negative_data_10%/version_0/checkpoints/epoch=240-step=14219-val_loss=0.00843.ckpt"
+# palm pressing
+# pretrained_path: "/home/coolbot/Documents/git/dex-dynamics/dynamics/exps/palm_pressing/train_tb_logs/palm_pressing/version_1/checkpoints/epoch=258-step=20979-val_loss=0.00630.ckpt"
+# dynamics_config_path: "/home/coolbot/Documents/git/dex-dynamics/dynamics/exps/palm_pressing/train_tb_logs/palm_pressing/version_1/hparams.yaml"
 
-# pretrained_path: "/mnt/dynamics/exps/aug_random_initial_frame+negative_data_10%/train_tb_logs/aug_random_initial_frame+negative_data_10%/version_0/checkpoints/epoch=105-step=62540-val_loss=0.00805.ckpt"
+# thumb pressing
+# pretrained_path: "/home/coolbot/Documents/git/dex-dynamics/dynamics/exps/thumb_press/train_tb_logs/thumb_press/version_0/checkpoints/epoch=232-step=18873-val_loss=0.00502.ckpt"
+# dynamics_config_path: "/home/coolbot/Documents/git/dex-dynamics/dynamics/exps/thumb_press/train_tb_logs/thumb_press/version_0/hparams.yaml"
 
-# pretrained_path: "/mnt/dynamics/exps/random_initial_frame+negative_data_50%/train_tb_logs/random_initial_frame+negative_data_50%/version_0/checkpoints/epoch=195-step=15876-val_loss=0.00804.ckpt" # relative good
+# thumb pinching
+# pretrained_path: "/home/coolbot/Documents/git/dex-dynamics/dynamics/exps/thumb_pinch/train_tb_logs/thumb_pinch/version_0/checkpoints/epoch=217-step=14824-val_loss=0.00719.ckpt"
+# dynamics_config_path: "/home/coolbot/Documents/git/dex-dynamics/dynamics/exps/thumb_pinch/train_tb_logs/thumb_pinch/version_0/hparams.yaml"
 
-# pretrained_path: "/mnt/dynamics/exps/random_initial_frame+negative_data/train_tb_logs/random_initial_frame+negative_data/version_0/checkpoints/epoch=242-step=28431-val_loss=0.00764.ckpt"
-
-# pretrained_path: "/mnt/dynamics/exps/aug_random_initial_frame+negative_data_50%/train_tb_logs/aug_random_initial_frame+negative_data_50%/version_0/checkpoints/epoch=44-step=36225-val_loss=0.00775.ckpt"
-
-# pretrained_path: "/mnt/dynamics/exps/random_initial_frame+negative_data_50%_total/train_tb_logs/random_initial_frame+negative_data_50%_total/version_0/checkpoints/epoch=167-step=19488-val_loss=0.00833.ckpt"
-
-# pretrained_path: "/mnt/dynamics/exps/aug_on_the_fly_random_initial_frame+negative_data_50%_knn_distance_limit/train_tb_logs/aug_on_the_fly_random_initial_frame+negative_data_50%_knn_distance_limit/version_0/checkpoints/epoch=181-step=14742-val_loss=0.00840.ckpt"
-
-# pretrained_path: "/mnt/dynamics/exps/aug_on_the_fly_random_initial_frame+negative_data_50%_knn_distance_limit_2/train_tb_logs/aug_on_the_fly_random_initial_frame+negative_data_50%_knn_distance_limit_2/version_0/checkpoints/epoch=189-step=22040-val_loss=0.00858.ckpt"
-
-# pretrained_path: "/mnt/dynamics/exps/aug_on_the_fly_hand_sampling_augment/train_tb_logs/aug_on_the_fly_hand_sampling_augment/version_6/checkpoints/epoch=202-step=23548-val_loss=0.00837.ckpt"
-
-pretrained_path: "/home/coolbot/Documents/git/dex-dynamics/dynamics/exps/aug_on_the_fly_hand_obj_sampling_augment/train_tb_logs/aug_on_the_fly_hand_obj_sampling_augment/version_13/checkpoints/epoch=217-step=23980-val_loss=0.00760.ckpt"
-
-dynamics_config_path: "/home/coolbot/Documents/git/dex-dynamics/dynamics/exps/aug_on_the_fly_hand_obj_sampling_augment/train_tb_logs/aug_on_the_fly_hand_obj_sampling_augment/version_13/hparams.yaml"
+# all skills
+pretrained_path: "/home/coolbot/Documents/git/dex-dynamics/dynamics/exps/all_skills/train_tb_logs/all_skills/version_0/checkpoints/epoch=282-step=96220-val_loss=0.00523.ckpt"
+dynamics_config_path: "/home/coolbot/Documents/git/dex-dynamics/dynamics/exps/all_skills/train_tb_logs/all_skills/version_0/hparams.yaml"
 
 horizon: 1 # 1
 # history_len: 30
@@ -35,39 +30,79 @@ horizon: 1 # 1
 test_batch_size: 1
 
 num_execution_iterations: 10 # 30
-num_samples: 20
-num_z_rotations: 2
+num_samples: 40
+num_z_rotations: 16 # 16
 sample_batch_size: 20
 beta: 0.3
 gamma: 1.0
 
 update_std: False
 
-robot_type: "xhand_right" # "ability_hand_right"
+robot_type: "ability_hand_right" # "ability_hand_right"
 robots:
   ability_hand_right:
+    init_std:
+      2_fingers_pinching:
+        [
+          0.0, 0.0, 0.0,  # wrist position
+          0., 0., 0.,   # wrist orientation
+          0., 0.2, 0., 0., 0., 0.2    # hand joint angles
+        ]
+      palm_pressing:
+        [
+          0.0, 0.0, 0.03,  # wrist position
+          0., 0., 0.,   # wrist orientation
+          0., 0., 0., 0., 0., 0.    # hand joint angles
+        ]
+      thumb_pressing:
+        [
+          0.0, 0.0, 0.03,  # wrist position
+          0., 0., 0.,   # wrist orientation
+          0., 0., 0., 0., 0., 0.    # hand joint angles
+        ]
+      thumb_pinching:
+        [
+          0.0, 0.0, 0.0,  # wrist position
+          0., 0., 0.,   # wrist orientation
+          0., 0., 0., 0., 0., 0.2    # hand joint angles
+        ]
+    init_action:
+      2_fingers_pinching:
+        [
+          0.06, -0.02, -0.1,
+          0, -50, 0, 
+          -1.4, 0.4, 0, 0, 0, 0.35
+        ] # heuristic setting for initial hand pose
+      palm_pressing:
+        [
+          0.06, -0.02, -0.05,
+          0, -90, 0, 
+          0., 0, 0, 0, 0, 0.
+        ] # heuristic setting for initial hand pose
+      thumb_pressing:
+        [
+          0.0, 0.08, -0.15,
+          90, 0, 0, 
+          0, 0, 0, 0, 0, 0.
+        ] # hand joint angles
+      thumb_pinching:
+        [
+          0.06, -0.02, -0.1,
+          0, -50, 0,
+          -1.4, 0.4, 0.4, 0.4, 0.4, 0.35
+        ] # heuristic setting for initial hand pose
     action_dim: 12
-    init_std: [
-                0.0, 0.0, 0.0,  # wrist position
-                0., 0., 0.,   # wrist orientation
-                0., 0.2, 0., 0., 0., 0.2    # hand joint angles
-              ]
-    init_action: [
-                    0.06, -0.02, -0.1,
-                    0, -50, 0, 
-                    -1.4, 0.4, 0, 0, 0, 0.35
-                  ] # heuristic setting for initial hand pose
   xhand_right:
     action_dim: 18
     init_std: [
                 0.0, 0.0, 0.0,  # wrist position
                 0., 0., 0.0,   # wrist orientation
-                0.2, 0, 0., 0., 0., 0.2, 0.2, 0, 0., 0., 0., 0.  # hand joint angles
+                0.1, 0, 0., 0., 0., 0.2, 0.2, 0, 0., 0., 0., 0.  # hand joint angles
               ]
     init_action: [
-                  0.06, -0.02, -0.1, # x, y, z
-                  90, 0, 90, # roll, pitch, yaw
-                  1.4, 0, 0, 0, 0, 0.7, 1.3, 0, 0, 0, 0, 0
+                  0.04, -0.02, -0.12, # x, y, z
+                  110, 0, 90, # roll, pitch, yaw
+                  1.4, 0, 0, 0, 0, 0.1, 1.3, 0, 0, 0, 0, 0
                 ] # hand joint angles
 
 loss:

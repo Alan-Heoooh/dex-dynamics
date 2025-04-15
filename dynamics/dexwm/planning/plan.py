@@ -133,7 +133,7 @@ def test_planning(config, save_dir):
     else:
         log_dir = f"{save_dir}/{run_name}"
 
-    mu, _, best_actions = planner.plan(
+    best_skill, mu, _, best_actions = planner.plan(
         t=1,
         log_dir=log_dir,  # /{run_name}",
         observation_batch=batch,

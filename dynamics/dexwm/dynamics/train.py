@@ -103,7 +103,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-c",
         "--config",
-        default=os.path.join(DYNAMICS_DIR, "deformable_dynamics_config_1.yaml"),
+        default=os.path.join(DYNAMICS_DIR, "deformable_dynamics_config.yaml"),
         type=str,
         help="config file path (default: dynamics_config.yaml)",
     )

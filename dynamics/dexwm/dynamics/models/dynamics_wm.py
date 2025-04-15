@@ -613,10 +613,10 @@ class DynamicsPredictor(pl.LightningModule):
 
             pos_seq_object.append(particle_pos.clone())
 
-        print(
-            f"Prediction completed, taken {time.time() - start_time}s, "
-            f"for sequence length {action_samples.shape[1]}"
-        )
+        # print(
+        #     f"Prediction completed, taken {time.time() - start_time}s, "
+        #     f"for sequence length {action_samples.shape[1]}"
+        # )
 
         pos_seq_object = torch.stack(pos_seq_object, dim=1)
 

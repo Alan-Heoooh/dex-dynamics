@@ -1,6 +1,8 @@
 import torch
 import numpy as np
 from multipledispatch import dispatch
+from transforms3d.euler import euler2axangle
+from transforms3d.quaternions import quat2mat
 
 
 def Rt_to_pose(R, t=np.zeros(3)):
@@ -98,3 +100,47 @@ def img_to_cam(K, u, v, depth_rect):
             (x.reshape(-1, 1), y.reshape(-1, 1), depth_rect.reshape(-1, 1)), dim=1
         )
     return pts_rect
+
+
+def rot_euler2axangle(rotation, axes="sxyz"):
+    """
+    Convert Euler angles [roll, pitch, yaw] -> axis-angle vector, for either
+    a PyTorch tensor or a NumPy array (shape = (3,)).
+
+    :param rotation: 3D rotation angles [rx, ry, rz] in radians.
+                     Accepts torch.Tensor or np.ndarray.
+    :param axes: The axes convention to use. Default is "sxyz".
+    :return: A vector [ax, ay, az] where
+             axis = [ax, ay, az]/angle, angle = norm([ax, ay, az]).
+    """
+    # --- 1) Pull out the 3 angles as floats, regardless of input type ---
+    if isinstance(rotation, torch.Tensor):
+        ai = rotation[0].item()
+        aj = rotation[1].item()
+        ak = rotation[2].item()
+    elif isinstance(rotation, np.ndarray):
+        ai = float(rotation[0])
+        aj = float(rotation[1])
+        ak = float(rotation[2])
+    else:
+        raise TypeError(
+            f"rotation must be torch.Tensor or np.ndarray, got {type(rotation)}"
+        )
+
+    # --- 2) Convert Euler angles -> (axis, angle) using transforms3d ---
+    axis, angle = euler2axangle(ai, aj, ak, axes=axes)  # axis is a NumPy array, angle is float
+
+    # --- 3) Build the final axis-angle vector = axis * angle ---
+    if isinstance(rotation, torch.Tensor):
+        # Make a PyTorch tensor on the same device/dtype as 'rotation'
+        axis_angle = torch.tensor(
+            axis,
+            dtype=rotation.dtype,
+            device=rotation.device
+        ) * angle
+    else:
+        # Make a NumPy array
+        axis_angle = axis * angle
+        axis_angle = np.asarray(axis_angle, dtype=rotation.dtype)
+        
+    return axis_angle

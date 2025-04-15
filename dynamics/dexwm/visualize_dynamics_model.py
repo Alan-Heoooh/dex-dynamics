@@ -7,8 +7,9 @@ import open3d as o3d
 
 plt.switch_backend('Agg')  # Headless mode
 
-data_dir = '/mnt/dynamics/exps/aug_on_the_fly_hand_sampling_augment/wis3d/validation/debug_200'
-save_dir = 'visualizations/aug_on_the_fly_hand_sampling_augment/validation'
+data_dir = '/home/coolbot/Documents/git/dex-dynamics/dynamics/exps/all_skills/wis3d/validation/debug_300'
+
+save_dir = '/home/coolbot/data/visualizations/all_skills/validation'
 
 os.makedirs(save_dir, exist_ok=True)
 

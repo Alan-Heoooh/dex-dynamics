@@ -399,5 +399,5 @@ class DeformableDataModule(pl.LightningDataModule):
             self.predict,
             batch_size=self.config["test_batch_size"],
             num_workers=self.config["num_workers"],
-            # shuffle=True,
+            shuffle=True,
         )
