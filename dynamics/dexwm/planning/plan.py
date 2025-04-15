@@ -144,6 +144,7 @@ def test_planning(config, save_dir):
         # goal=goal,
         visualize_k=config["visualize_k"],
         return_best=True,
+        num_skills_in_sequence=config["num_skills_in_sequence"],
     )
 
     return best_actions
