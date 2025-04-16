@@ -135,16 +135,16 @@ class MPPIOptimizer:
 
         # Get initial and target object poses from dataset
         init_obj_pos = observation_batch.obj_init_pcd  # (n_points, 3)
-        # target_obj_pos = observation_batch.obj_final_pcd  # (n_points, 3)
-
         init_obj_pos = torch.from_numpy(init_obj_pos[0]).to(self.device).to(torch.float32)
-        # target_obj_pos = torch.from_numpy(target_obj_pos[0]).to(self.device).to(torch.float32)
 
-        target_obj_pos = np.load("/home/coolbot/data/target_shape/X.npy")
-        target_obj_pos_center = np.mean(target_obj_pos, axis=0)
-        target_obj_pos = target_obj_pos - target_obj_pos_center
-        target_obj_pos = target_obj_pos * 1.2
-        target_obj_pos = torch.from_numpy(target_obj_pos).to(self.device).to(torch.float32)
+        target_obj_pos = observation_batch.obj_final_pcd  # (n_points, 3)
+        target_obj_pos = torch.from_numpy(target_obj_pos[0]).to(self.device).to(torch.float32)
+
+        # target_obj_pos = np.load("/home/coolbot/data/target_shape/K.npy")
+        # target_obj_pos_center = np.mean(target_obj_pos, axis=0)
+        # target_obj_pos = target_obj_pos - target_obj_pos_center
+        # target_obj_pos = target_obj_pos * 1.4
+        # target_obj_pos = torch.from_numpy(target_obj_pos).to(self.device).to(torch.float32)
 
         if self.debug:
             gt_init_hand_pos = observation_batch.hand_init_pcd  # (n_hand_points, 3)
@@ -418,7 +418,7 @@ class MPPIOptimizer:
                             }
                 
                     # After all MPPI iterations, save results for this skill+rotation
-                    print(f"Best reward for Seq{sequence_idx+1}, Skill: {skill}, Z-rot: {z_rotation:.2f}rad: {best_reward:.4f}")
+                    print(f"Best reward for Seq{sequence_idx+1}, Skill: {skill}, Z-rot: {best_action_prediction["z_rotation"]:.2f}rad: {best_action_prediction["reward"]:.4f}")
                 
                     # Update best for this skill if this rotation is better
                     if best_reward < skill_best_reward:

@@ -67,16 +67,21 @@ def test_planning(config, save_dir):
     # save config
     write_yaml(config, f"{save_dir}/{run_name}/config.yaml")
 
-    data_module = DeformableDataModule(config)
-    data_module.prepare_data()
-    data_module.setup("predict")
-    dataloader = data_module.predict_dataloader()
+    
 
-    # test model
-    # get a batch of data
-    data_iter = iter(dataloader)
+    if config["real_world"]:
+        
+    else:
+        data_module = DeformableDataModule(config)
+        data_module.prepare_data()
+        data_module.setup("predict")
+        dataloader = data_module.predict_dataloader()
 
-    batch = next(data_iter).to(device)
+        # test model
+        # get a batch of data
+        data_iter = iter(dataloader)
+        batch = next(data_iter).to(device)
+
 
     horizon = config["horizon"]
     robot_type = config["robot_type"]
@@ -133,7 +138,8 @@ def test_planning(config, save_dir):
     else:
         log_dir = f"{save_dir}/{run_name}"
 
-    best_skill, mu, _, best_actions = planner.plan(
+    # best_skill, mu, _, best_actions
+    best_metadata, best_actions, best_predictions = planner.plan(
         t=1,
         log_dir=log_dir,  # /{run_name}",
         observation_batch=batch,
