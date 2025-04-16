@@ -45,12 +45,12 @@ def project_point_cloud_to_marker(pcd, camera_sn, projector=None):
 
     return pcd_marker
 
-def filter_point_cloud(pcd):
+def filter_point_cloud(pcd, filter_min=FILTER_MIN, filter_max=FILTER_MAX):
     pcd_points = np.asarray(pcd.points)
 
-    x_filter = (pcd_points.T[0] > FILTER_MIN[0]) & (pcd_points.T[0] < FILTER_MAX[0])
-    y_filter = (pcd_points.T[1] > FILTER_MIN[1]) & (pcd_points.T[1] < FILTER_MAX[1])
-    z_filter = (pcd_points.T[2] > FILTER_MIN[2]) & (pcd_points.T[2] < FILTER_MAX[2])
+    x_filter = (pcd_points.T[0] > filter_min[0]) & (pcd_points.T[0] < filter_max[0])
+    y_filter = (pcd_points.T[1] > filter_min[1]) & (pcd_points.T[1] < filter_max[1])
+    z_filter = (pcd_points.T[2] > filter_min[2]) & (pcd_points.T[2] < filter_max[2])
 
     filter = x_filter & y_filter & z_filter
 
@@ -244,7 +244,8 @@ def sample(pcd, pcd_dense_prev, pcd_sparse_prev, hand_mesh, is_moving_back, patc
     sampled_points = sampled_points[sdf > 0]
 
     ##### 3. use SDF to filter out points INSIDE the tool mesh #####
-    sampled_points, _ = inside_hand_filter(sampled_points, hand_mesh=hand_mesh, visualize=visualize)
+    if hand_mesh is not None:
+        sampled_points, _ = inside_hand_filter(sampled_points, hand_mesh=hand_mesh, visualize=visualize)
     sampled_pcd = o3d.geometry.PointCloud()
     sampled_pcd.points = o3d.utility.Vector3dVector(sampled_points)
 
@@ -342,21 +343,21 @@ def random_hand_init_frame(hand_idx_list_all, n_hand_samples):
 
 
 def main(pcd_dense_prev=None, pcd_sparse_prev=None):
-    n_hand_samples = 4
-    n_negative_hand_samples = 4
+    visualize = False
 
+    n_hand_samples = 4 # 4
+    n_negative_hand_samples = 4 # 4
     master_camera_sn = 'cam_0'
     camera_list = ['cam_0', 'cam_1', 'cam_2', 'cam_3']
     calib_path = '/home/coolbot/data/calib'
-
     data_path = '/home/coolbot/data/hand_object_perception'
-    hand_ret_file = 'pred_hand_data_0313'
-    train_dir = os.path.join(data_path, 'train_0313')
-
-    save_ret_dir = '/home/coolbot/data/hand_obj_ret_0402_obj_dense'
+    hand_ret_file = 'pred_hand_data_0413_thumb_press'
+    # train_dir = os.path.join(data_path, 'train_0313')
+    # train_dir  = '/media/coolbot/Extreme Pro/data/train_0412_palm_press_finger_press'
+    train_dir  = '/media/coolbot/Extreme Pro/data/train_0413_thumb_press'
+    save_ret_dir = '/home/coolbot/data/hand_obj_ret_0413_thumb_press'
     os.makedirs(save_ret_dir, exist_ok=True)
     
-    visualize = False
     with open('/home/coolbot/Documents/git/dex-dynamics/object_perception/hand_perception_label_integrate.yaml' , 'r') as f:
         hand_perception_label = yaml.load(f, Loader=yaml.FullLoader)
 
@@ -365,16 +366,17 @@ def main(pcd_dense_prev=None, pcd_sparse_prev=None):
 
     projector = Projector(calib_path=calib_path)
 
-    BAD_SCENE = [301, 302, 307, 308, 311, 314, 316, 325, 326, 344, 359, 362, 364, 366, 395, 397]
+    BAD_SCENE = [301, 302, 307, 308, 311, 314, 316, 325, 326, 344, 359, 362, 364, 366, 395, 397,
+                702, 704, 708, 716, 717, 726, 728, 734, 750]
 
     for scene_dir in sorted(os.listdir(train_dir)):
         scene_path = os.path.join(train_dir, scene_dir)
         scene_len = len(os.listdir(os.path.join(scene_path, 'cam_0', 'color')))
         scene_idx = int(scene_dir[6:10])
 
-        if scene_idx in BAD_SCENE:
-            print(f'Skipping scene {scene_idx}.')
-            continue
+        # if scene_idx in BAD_SCENE:
+        #     print(f'Skipping scene {scene_idx}.')
+        #     continue
 
         # hand perception frames
         hand_ret_path = os.path.join(data_path, hand_ret_file, f'pred_scene_{scene_idx:04d}.npy')
@@ -386,7 +388,7 @@ def main(pcd_dense_prev=None, pcd_sparse_prev=None):
 
         # object perception frames
         for i, hand_init_idx in enumerate(hand_init_list):
-            object_idx_list = [0, scene_len - 1]
+            object_idx_list = [1, scene_len - 1]
             hand_idx_list = [hand_init_idx, hand_idx_list_all[2]]
             print(f'hand_idx_list: {hand_idx_list}')
 
@@ -396,7 +398,7 @@ def main(pcd_dense_prev=None, pcd_sparse_prev=None):
             
         # negative data
         for i in range(n_negative_hand_samples):
-            object_idx_list = [0, 0]
+            object_idx_list = [1, 1]
             hand_idx_list = np.random.randint(hand_idx_list_all[0], hand_idx_list_all[1] + 1, 2)
             # hand_idx_list = sorted(hand_idx_list)
             print(f'negative hand_idx_list: {hand_idx_list}')
