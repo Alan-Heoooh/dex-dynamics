@@ -1,0 +1,13 @@
+README.md
+pyproject.toml
+setup.py
+lib/libsoem.so
+lib/libxhand_control.so
+src/xhand_control.cpp
+xhand_controller/__init__.py
+xhand_controller/xhand_controller.py
+xhand_controller.egg-info/PKG-INFO
+xhand_controller.egg-info/SOURCES.txt
+xhand_controller.egg-info/dependency_links.txt
+xhand_controller.egg-info/requires.txt
+xhand_controller.egg-info/top_level.txt
