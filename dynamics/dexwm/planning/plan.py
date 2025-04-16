@@ -38,7 +38,7 @@ class Logger:
         self.writer.close()
 
 
-def test_planning(config, save_dir):
+def test_planning(config, save_dir, model, batch):
     run_name = time.strftime("%m%d_%H%M%S")
     if not config["debug"]:
         wandb.init(
@@ -52,35 +52,11 @@ def test_planning(config, save_dir):
     writer = SummaryWriter(log_dir=f"{save_dir}/{run_name}")
     logger = Logger(log_wandb=not config["debug"], tensorboard=writer)
 
-    pretrained_path = config["pretrained_path"]
-    model = DynamicsPredictor.load_from_checkpoint(pretrained_path)
-    # model.config.device = torch.device("cuda:1")
-    device = model.config.device
-    model = model.to(device)
-    # config = ConfigParser(dict())
-    debug = config["debug"]
-    config.update_from_yaml(config["dynamics_config_path"])
-    config._config["debug"] = debug
-
+    
     assert config["test_batch_size"] == 1, "test batch size must be 1"
 
     # save config
     write_yaml(config, f"{save_dir}/{run_name}/config.yaml")
-
-    
-
-    if config["real_world"]:
-        
-    else:
-        data_module = DeformableDataModule(config)
-        data_module.prepare_data()
-        data_module.setup("predict")
-        dataloader = data_module.predict_dataloader()
-
-        # test model
-        # get a batch of data
-        data_iter = iter(dataloader)
-        batch = next(data_iter).to(device)
 
 
     horizon = config["horizon"]
@@ -143,11 +119,6 @@ def test_planning(config, save_dir):
         t=1,
         log_dir=log_dir,  # /{run_name}",
         observation_batch=batch,
-        # object_type_feat,
-        # vision_feature,
-        # node_pos,
-        # action_history=action_hist,
-        # goal=goal,
         visualize_k=config["visualize_k"],
         return_best=True,
         num_skills_in_sequence=config["num_skills_in_sequence"],
@@ -173,7 +144,28 @@ if __name__ == "__main__":
         help="indices of GPUs to enable (default: all)",
     )
 
-    config = ConfigParser.from_dynamics_args(parser)
+    config = ConfigParser.from_dynamics_args(parser)  
 
+    # load model
+    pretrained_path = config["pretrained_path"]
+    model = DynamicsPredictor.load_from_checkpoint(pretrained_path)
+    device = model.config.device
+    model = model.to(device)
+
+    debug = config["debug"]
+    config.update_from_yaml(config["dynamics_config_path"])
+    config._config["debug"] = debug
     save_dir = config["exp_name"]
-    best_actions = test_planning(config, save_dir)
+
+    # load data
+    data_module = DeformableDataModule(config)
+    data_module.prepare_data()
+    data_module.setup("predict")
+    dataloader = data_module.predict_dataloader()
+    # test model
+    # get a batch of data
+    data_iter = iter(dataloader)
+    batch = next(data_iter).to(device)
+
+    best_actions = test_planning(config, save_dir, model, batch)
+    print("Best actions: ", best_actions)

@@ -134,21 +134,26 @@ class MPPIOptimizer:
         os.makedirs(log_dir, exist_ok=True)
 
         # Get initial and target object poses from dataset
-        init_obj_pos = observation_batch.obj_init_pcd  # (n_points, 3)
-        init_obj_pos = torch.from_numpy(init_obj_pos[0]).to(self.device).to(torch.float32)
+        if self.config["real_world"]:
+            init_obj_pos = observation_batch["obj_init_pcd"]  # (n_points, 3)
+            init_obj_pos = torch.from_numpy(init_obj_pos).to(self.device).to(torch.float32)
+            target_obj_pos = observation_batch["obj_final_pcd"]  # (n_points, 3)
+            target_obj_pos = torch.from_numpy(target_obj_pos).to(self.device).to(torch.float32)
+        else:   
+            init_obj_pos = observation_batch.obj_init_pcd  # (n_points, 3)
+            init_obj_pos = torch.from_numpy(init_obj_pos[0]).to(self.device).to(torch.float32)
+            target_obj_pos = observation_batch.obj_final_pcd  # (n_points, 3)
+            target_obj_pos = torch.from_numpy(target_obj_pos[0]).to(self.device).to(torch.float32)
 
-        target_obj_pos = observation_batch.obj_final_pcd  # (n_points, 3)
-        target_obj_pos = torch.from_numpy(target_obj_pos[0]).to(self.device).to(torch.float32)
+            target_obj_pos = np.load("/home/coolbot/data/target_shape/K.npy")
+            target_obj_pos_center = np.mean(target_obj_pos, axis=0)
+            target_obj_pos = target_obj_pos - target_obj_pos_center
+            target_obj_pos = target_obj_pos * 1.4
+            target_obj_pos = torch.from_numpy(target_obj_pos).to(self.device).to(torch.float32)
 
-        # target_obj_pos = np.load("/home/coolbot/data/target_shape/K.npy")
-        # target_obj_pos_center = np.mean(target_obj_pos, axis=0)
-        # target_obj_pos = target_obj_pos - target_obj_pos_center
-        # target_obj_pos = target_obj_pos * 1.4
-        # target_obj_pos = torch.from_numpy(target_obj_pos).to(self.device).to(torch.float32)
-
-        if self.debug:
-            gt_init_hand_pos = observation_batch.hand_init_pcd  # (n_hand_points, 3)
-            gt_target_hand_pos = observation_batch.hand_final_pcd  # (n_hand_points, 3)
+        # if self.debug:
+        #     gt_init_hand_pos = observation_batch.hand_init_pcd  # (n_hand_points, 3)
+        #     gt_target_hand_pos = observation_batch.hand_final_pcd  # (n_hand_points, 3)
 
         """Define the Z-axis rotation angles to sample"""
         num_z_rotations = self.config["num_z_rotations"]
@@ -263,11 +268,11 @@ class MPPIOptimizer:
                             torch.FloatTensor(latent_action_samples).to(self.device)
                         )
 
-                        if self.debug:
-                            # Add ground truth action to samples for debugging
-                            gt_pcld_action_sample = gt_target_hand_pos - gt_init_hand_pos
-                            gt_pcld_action_sample = gt_pcld_action_sample[None, None]
-                            pcld_action_samples = torch.cat([pcld_action_samples, gt_pcld_action_sample], dim=0)
+                        # if self.debug:
+                        #     # Add ground truth action to samples for debugging
+                        #     gt_pcld_action_sample = gt_target_hand_pos - gt_init_hand_pos
+                        #     gt_pcld_action_sample = gt_pcld_action_sample[None, None]
+                        #     pcld_action_samples = torch.cat([pcld_action_samples, gt_pcld_action_sample], dim=0)
 
                         B, T, _, _ = pcld_action_samples.shape
 
@@ -360,7 +365,7 @@ class MPPIOptimizer:
                         )  # shape [num_samples, 1, 1]
                         best_last_state_indices = np.argsort(last_state_rewards.flatten())[:top_k]
                         best_last_state_rewards = [last_state_rewards[i] for i in best_last_state_indices]
-                        print(f"Seq{sequence_idx+1}, Skill: {skill}, Z-rot {z_idx}, iter {iter} - Last state rewards: {best_last_state_rewards[0][0][0]:.4f}")
+                        # print(f"Seq{sequence_idx+1}, Skill: {skill}, Z-rot {z_idx}, iter {iter} - Last state rewards: {best_last_state_rewards[0][0][0]:.4f}")
 
                         # Visualization for planning results
                         if (iter % self.log_every == 0 and visualize_k > 0):
@@ -418,8 +423,8 @@ class MPPIOptimizer:
                             }
                 
                     # After all MPPI iterations, save results for this skill+rotation
-                    print(f"Best reward for Seq{sequence_idx+1}, Skill: {skill}, Z-rot: {best_action_prediction["z_rotation"]:.2f}rad: {best_action_prediction["reward"]:.4f}")
-                
+                    print(f"Best reward for Seq{sequence_idx+1}, Skill: {skill}, Z-rot: {best_action_prediction['z_rotation']:.2f}rad: {best_action_prediction['reward']:.4f}")
+
                     # Update best for this skill if this rotation is better
                     if best_reward < skill_best_reward:
                         skill_best_reward = best_reward
@@ -518,7 +523,7 @@ class MPPIOptimizer:
             return best_metadata, best_actions, best_predictions
         else:
             return best_metadata
-            
+
 
 def rotate_around_world_z_np(pose: np.ndarray, theta: float) -> np.ndarray:
     """
