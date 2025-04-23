@@ -18,12 +18,156 @@ class GaussianSampler(Sampler):
             np.expand_dims(mu, 0)
             + np.random.normal(size=(num_samples, self.a_dim)) * std[0]
         ) # (T, B, n_action)
-        # import pdb; pdb.set_trace()
-
-        # heuristics: index finger
-        # result[:, :, 7] = 0.3
 
         return result.transpose((1, 0, 2)) # (B, T, n_action)
+    
+    # there seems to be a typo here with 'de' - should be fixed
+
+
+class MultiSkillSampler(Sampler):
+    """
+    A sampler that can combine multiple robot skills.
+    Allows sequential execution of different skills within a single sample.
+    """
+    def __init__(self, a_dim, horizon, beta=0.3, num_repeat=1):
+        """
+        Initialize the multi-skill sampler
+
+        Args:
+            a_dim: Action dimension
+            horizon: Time horizon for each skill
+            beta: Noise correlation coefficient
+            num_repeat: Number of repetition samples
+        """
+        super().__init__()
+        self.a_dim = a_dim
+        self.horizon = horizon
+        self.beta = beta
+        self.num_repeat = num_repeat
+        
+        # Create correlated noise sampler for each skill
+        self.correlated_sampler = CorrelatedNoiseSampler(
+            self.a_dim, self.beta, self.horizon, self.num_repeat
+        )
+        
+    def sample_skill_actions(self, num_samples, skill_config):
+        """
+        Generate actions based on a single skill configuration
+
+        Args:
+            num_samples: Number of samples
+            skill_config: Skill configuration with init_std and init_action
+
+        Returns:
+            Actions array of shape (num_samples, horizon, a_dim)
+        """
+        init_std = np.array(skill_config.get("init_std", np.zeros(self.a_dim)))
+        init_action = np.array(skill_config.get("init_action", np.zeros(self.a_dim)))
+        
+        # Use correlated noise sampler to generate actions
+        actions = self.correlated_sampler.sample_actions(num_samples, init_action, [init_std])
+        return actions
+    
+    def sample_skill_sequence(self, num_samples, skills_config, skills_sequence):
+        """
+        Generate action sequences based on a sequence of skills
+
+        Args:
+            num_samples: Number of samples
+            skills_config: Dictionary with skill configurations
+            skills_sequence: List of skill names in sequence
+
+        Returns:
+            Action sequence of shape (num_samples, len(skills_sequence)*horizon, a_dim)
+        """
+        all_actions = []
+        
+        for skill_name in skills_sequence:
+            if skill_name not in skills_config:
+                raise ValueError(f"Skill '{skill_name}' not defined in configuration")
+                
+            skill_actions = self.sample_skill_actions(num_samples, skills_config[skill_name])
+            all_actions.append(skill_actions)
+        
+        # Concatenate actions from different skills along the time dimension
+        if all_actions:
+            return np.concatenate(all_actions, axis=1)
+        return np.empty((num_samples, 0, self.a_dim))
+    
+    def sample_random_skill_sequences(self, num_samples, skills_config, num_skills_per_sample=2):
+        """
+        Randomly generate skill sequences for each sample
+
+        Args:
+            num_samples: Number of samples
+            skills_config: Dictionary with skill configurations
+            num_skills_per_sample: Number of skills in each sample sequence
+
+        Returns:
+            Action sequences and corresponding skill sequence lists
+        """
+        skill_names = list(skills_config.keys())
+        all_actions = []
+        all_skill_sequences = []
+        
+        for _ in range(num_samples):
+            # Randomly select skill sequence
+            selected_skills = np.random.choice(skill_names, size=num_skills_per_sample, replace=True)
+            all_skill_sequences.append(selected_skills)
+            
+            # Generate action sequence for this sample
+            sample_actions = self.sample_skill_sequence(1, skills_config, selected_skills)
+            all_actions.append(sample_actions[0])  # Take only first sample
+            
+        return np.array(all_actions), all_skill_sequences
+
+    def sample_fixed_skill_sequence(self, num_samples, skills_config, skills_sequence):
+        """
+        Generate samples based on a fixed skill sequence
+
+        Args:
+            num_samples: Number of samples
+            skills_config: Dictionary with skill configurations
+            skills_sequence: Fixed skill sequence
+
+        Returns:
+            Action sequence of shape (num_samples, len(skills_sequence)*horizon, a_dim)
+        """
+        return self.sample_skill_sequence(num_samples, skills_config, skills_sequence)
+    
+    def create_skills_config_from_yaml(self, yaml_config):
+        """
+        Create skills configuration dictionary from YAML config
+
+        Args:
+            yaml_config: YAML configuration object
+
+        Returns:
+            Skills configuration dictionary
+        """
+        skills_config = {}
+        # skills = yaml_config.get("SKILLS", [])
+        # robot_type = yaml_config.get("robot_type", "ability_hand_right")
+        # robot_config = yaml_config.get("robots", {}).get(robot_type, {})
+        
+        # init_std_config = robot_config.get("init_std", {})
+        # init_action_config = robot_config.get("init_action", {})
+        skills = yaml_config["SKILLS"]
+        robot_type = yaml_config["robot_type"]
+        robot_config = yaml_config["robots"][robot_type]
+        init_std_config = robot_config["init_std"]
+        init_action_config = robot_config["init_action"]
+        
+        for skill in skills:
+            skills_config[skill] = {
+                # "init_std": init_std_config.get(skill, [0.0] * self.a_dim),
+                # "init_action": init_action_config.get(skill, [0.0] * self.a_dim)
+                "init_std": init_std_config[skill],
+                "init_action": init_action_config[skill]
+            }
+            
+        return skills_config
+
 
 class CorrelatedNoiseSampler(GaussianSampler):
     def __init__(self, a_dim, beta, horizon, num_repeat=1):
