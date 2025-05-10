@@ -1,0 +1,52 @@
+pytorch3d @ https://dl.fbaipublicfiles.com/pytorch3d/packaging/wheels/py310_cu121_pyt231/pytorch3d-0.7.8-cp310-cp310-linux_x86_64.whl
+
+warp-lang @ https://github.com/NVIDIA/warp/releases/download/v1.3.3/warp_lang-1.3.3+cu12-py3-none-manylinux2014_x86_64.whl
+
+# SAM2 dependency
+tqdm
+hydra.core
+iopath
+pillow
+
+# OpenMMLab packages installation interface for MMPose
+openmim
+
+# Other dependencies
+ninja
+ruamel.yaml
+transformations
+loguru
+transforms3d
+rdp
+pyqt5
+termcolor
+tensorboard
+mesh2sdf
+scikit-learn
+scipy
+matplotlib
+open3d
+dl_ext
+psutil
+kornia
+h5py
+ultralytics
+yacs
+smplx
+pytorch_lightning
+pyrender
+timm
+blinker==1.4  # weird system dependency on software-properties-common
+dataclasses_jsonschema
+
+torch-geometry
+torch-cluster
+sapien==3.0.0b1
+mani_skill
+dex-retargeting
+emd
+
+chumpy @ git+https://github.com/mattloper/chumpy.git@master
+manopth @ git+https://github.com/hassony2/manopth.git@master
+nvdiffrast @ git+https://github.com/NVlabs/nvdiffrast.git
+wis3d @ https://github.com/zju3dv/Wis3D/releases/download/2.0.3/wis3d-2.0.3-py3-none-any.whl

@@ -9,8 +9,8 @@ from object_perception.projector_np import Projector
 from wis3d import Wis3D
 
 
-FILTER_MIN = np.array([-0.2, -0.2, -0.2])
-FILTER_MAX = np.array([0.2, 0.2, 0.2])
+FILTER_MIN = np.array([-0.08, -0.08, -0.08])
+FILTER_MAX = np.array([0.08, 0.08, 0.08])
 
 
 def filter_point_cloud(pcd):
@@ -29,6 +29,9 @@ def filter_point_cloud(pcd):
 
 root_dir = '/home/coolbot/data'
 camera_sn_list = [ 'cam_0', 'cam_1', 'cam_2', 'cam_3']
+# camera_sn_list = ['cam_2', 'cam_3']
+
+# master_camera_sn = camera_sn_list[0]
 master_camera_sn = camera_sn_list[-1]
 
 calib_dir = os.path.join(root_dir, 'calib')
@@ -43,7 +46,6 @@ intrinsics['cam_0'] = np.array([[909.22192383,   0.        , 634.7142334 ,   0. 
 intrinsics['cam_1'] = np.array([[912.91558838,   0.        , 661.25982666,   0.        ],
                             [  0.        , 912.52545166, 373.5128479 ,   0.        ],
                             [  0.        ,   0.        ,   1.        ,   0.        ]]).astype(np.float32)
-# ERROR
 intrinsics['cam_2'] = np.array([[916.56665039,   0.        , 648.18109131,   0.        ],
                                             [  0.        , 916.77130127, 358.43869019,   0.        ],
                                             [  0.        ,   0.        ,   1.        ,   0.        ]])
@@ -55,22 +57,26 @@ data_dir = os.path.join(root_dir, 'hand_object_perception')
 
 pred_file = os.path.join(data_dir, 'pred_hand_data_0316_cam3')
 
-train_dir = os.path.join(data_dir, 'train_0313')
+# train_dir = os.path.join(data_dir, 'train_0313')
+train_dir = "/home/coolbot/data/hand_object_perception/train_0313_2finger_pinch"
 
-scene_id = 300
+scene_id = 330
 
 pred_data = np.load(os.path.join(pred_file, f'pred_scene_{scene_id:04d}.npy'), allow_pickle=True)
 scene_len = len(pred_data)
 scene_dir = os.path.join(train_dir, f'scene_{scene_id:04d}_0')
 
 wis3d = Wis3D(out_folder="/home/coolbot/Documents/git/dex-dynamics/wis3d_exp",
-              sequence_name="hand_trajectory_310",
+              sequence_name=f"hand_trajectory_{scene_id:04d}",
               xyz_pattern=("x", "-y", "-z"),
             )
 
 wis3d.set_scene_id(0)
 
-scene_list = [24, 48]
+# load yaml
+with open("/home/coolbot/Documents/git/dex-dynamics/object_perception/hand_perception_label_integrate.yaml", 'r') as f:
+    data = yaml.safe_load(f)
+scene_list = data["hand_idx"][scene_id]
 
 
 # for i in range(0, scene_len, 1):
@@ -134,8 +140,15 @@ for i in scene_list:
     print(f"frame {i}")
     cloud_marker_all_bbox = filter_point_cloud(cloud_marker_all)
     cloud_marker_all = cloud_marker_all_bbox
-    o3d.visualization.draw_geometries([ axis, cloud_marker_all, hand_mesh])
+
+    # downsample
+    cloud_marker_all = cloud_marker_all.voxel_down_sample(voxel_size=0.001)
+
+    # o3d.visualization.draw_geometries([ axis, cloud_marker_all, hand_mesh])
+    # o3d.visualization.draw_geometries([ axis, cloud_marker_all])
+    # o3d.visualization.draw_geometries([ axis, cloud_marker_all])
     o3d.io.write_point_cloud(f"pcd_{i}.ply", cloud_marker_all)
+    o3d.io.write_triangle_mesh(f"hand_mesh_{i}.ply", hand_mesh)
 
     # wis3d visualization
     hand_mesh_vertices = np.array(hand_mesh.vertices)

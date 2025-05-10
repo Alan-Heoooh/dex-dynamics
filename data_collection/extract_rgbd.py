@@ -8,13 +8,13 @@ EXTRACTION_SCRIPT = "data_collection/sync_ros_to_data.py"
 # List of ROS bag files to play
 
 
-start_idx= 375
-end_idx = 399
+start_idx = 600
+end_idx = 759
 
-BAG_FILES = [f"/home/coolbot/data/hand_object_perception/ros/scene_{i:04d}/scene_{i:04d}_0.db3" for i in range(start_idx, end_idx+1)]
+BAG_FILES = [f"/media/coolbot/Extreme Pro/data/ros_record/scene_{i:04d}/scene_{i:04d}_0.db3" for i in range(start_idx, end_idx+1)]
 
 # Base directory for saving images
-BASE_SAVE_DIR = "/home/coolbot/data/hand_object_perception/train_0313"
+BASE_SAVE_DIR = "/media/coolbot/Extreme Pro/data/train_0413_thumb_press+thumb_pinch"
 
 def run_extraction_script(save_dir):
     """Runs the image extraction script with a specific save directory."""
@@ -32,6 +32,9 @@ def play_ros_bag(bag_path):
 def main():
     for bag_path in BAG_FILES:
         # Extract bag file name (without extension) to create a unique directory
+        if not os.path.exists(bag_path):
+            print(f"Bag file {bag_path} does not exist. Skipping...")
+            continue
         bag_name = os.path.basename(bag_path).replace(".db3", "")
         save_dir = os.path.join(BASE_SAVE_DIR, bag_name)
 

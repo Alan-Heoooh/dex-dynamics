@@ -14,14 +14,6 @@ import dexwm.planning.robot
 import gymnasium as gym
 from .hand_pcld import PcldWrapper
 
-# from dex_retargeting.constants import (
-#     RobotName,
-#     RetargetingType,
-#     HandType,
-#     get_default_config_path,
-# )
-# from dex_retargeting.retargeting_config import RetargetingConfig
-# from dex_retargeting.seq_retarget import SeqRetargeting
 from manopth.manolayer import ManoLayer
 from manopth.tensutils import (
     make_list,
@@ -31,13 +23,6 @@ from manopth.tensutils import (
     th_with_zeros,
 )
 from pytorch3d.transforms import matrix_to_axis_angle
-
-# urdf_path = f"{ASSETS_DIR}/ability_hand/ability_hand_right.urdf"
-
-# retargeting_robot_name_map = {
-#     "ability_hand_right": (RobotName.ability, HandType.right),
-# }
-
 
 class RobotPcldWrapper(PcldWrapper):
     def __init__(
@@ -91,7 +76,6 @@ class RobotPcldWrapper(PcldWrapper):
             qpos=init_qpos.squeeze(0).cpu().numpy(),
         )  # dict[str, torch.Tensor]
 
-        # import pdb; pdb.set_trace()
         query_link_names = list(pclds.keys())
         self.query_link_names = query_link_names
         pcld_list = [pclds[name] for name in query_link_names]
@@ -174,10 +158,7 @@ class RobotPcldWrapper(PcldWrapper):
     def set_init_params(self, action_vec): # init_qpos=None:
         """
         input:
-            mano_pose: torch.Tensor (1, 51)
-            mano_shape: torch.Tensor (1, 10)
-        self.action:
-            torch.Tensor (num_samples, 12)
+            self.action: torch.Tensor (num_samples, 12)
         """
         # if init_qpos is not None:
         #     self.action[:, 6:] = (
@@ -189,7 +170,8 @@ class RobotPcldWrapper(PcldWrapper):
         if action_vec.dim() == 1:
             action_vec = action_vec.unsqueeze(0)
 
-        self.action = action_vec.repeat(self.num_samples, 1).to(self.device)
+        # self.action = action_vec.repeat(self.num_samples, 1).to(self.device)
+        self.action = action_vec.to(self.device)
         self.action_init = self.action.detach().clone()
 
     def reset(self):
@@ -208,7 +190,7 @@ class RobotPcldWrapper(PcldWrapper):
         # for i in range(10):
         # self.env.step(self.action[:, 6:])
         # self.env.step(None)
-        # self.env.update_scene() # step(None)
+        # self.env.update_scene()
         if self.env.gpu_sim_enabled:
             """
             Warning: Really Important!!!!

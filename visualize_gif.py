@@ -6,10 +6,8 @@ import imageio
 
 plt.switch_backend('Agg')  # Headless mode
 
-# data_dir = '/home/coolbot/data/hand_obj_ret_0323_cam0_small_action'
-data_dir = '/home/coolbot/data/hand_obj_ret_0331_obj_dense'
-
-save_dir = '/home/coolbot/Documents/git/dex-dynamics/visualize_0331'
+data_dir = '/home/coolbot/data/hand_obj_ret_0413_thumb_press'
+save_dir = '/home/coolbot/data/visualize_thumb_press'
 os.makedirs(save_dir, exist_ok=True)
 
 def create_multi_view_frame(hand_pcd, obj_pcd, title, views, axis_limits):

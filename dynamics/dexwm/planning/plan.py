@@ -10,7 +10,7 @@ sys.path.append(project_root)
 from planning.cost_functions import CostFunction
 from utils.macros import PLANNING_DIR
 from planning.samplers import *
-from planning.planner import MPPIOptimizer
+from planning.planner import MPPIOptimizer, SkillMPPIOptimizer
 from dynamics.dataset import DeformableDataModule
 from dynamics.config_parser import ConfigParser
 from dynamics.models import DynamicsPredictor
@@ -52,7 +52,6 @@ def test_planning(config, save_dir, model, batch):
     writer = SummaryWriter(log_dir=f"{save_dir}/{run_name}")
     logger = Logger(log_wandb=not config["debug"], tensorboard=writer)
 
-    
     assert config["test_batch_size"] == 1, "test batch size must be 1"
 
     # save config
@@ -66,15 +65,20 @@ def test_planning(config, save_dir, model, batch):
 
     # build a planner
     # first build a sampler
-    sampler = CorrelatedNoiseSampler(a_dim=action_dim, beta=config["beta"], horizon=horizon, num_repeat=1)
+    # sampler = CorrelatedNoiseSampler(a_dim=action_dim, beta=config["beta"], horizon=horizon, num_repeat=1)
     # sampler = GaussianSampler(horizon=horizon, a_dim=action_dim)
-
-    if config["robot_type"] == "hand":
-        point_cloud_wrapper = HandPcldWrapper(
-            particles_per_hand=config["particles_per_hand"],
-            num_samples=config["num_samples"],
-        )
-    elif config["robot_type"] == "ability_hand_right" or config["robot_type"] == "xhand_right":
+    # skill sampler 
+    sampler = MultiSkillSampler(
+        a_dim = action_dim,
+        horizon = horizon,
+        beta = config["beta"],
+    )
+    # if config["robot_type"] == "hand":
+    #     point_cloud_wrapper = HandPcldWrapper(
+    #         particles_per_hand=config["particles_per_hand"],
+    #         num_samples=config["num_samples"],
+    #     )
+    if config["robot_type"] == "ability_hand_right" or config["robot_type"] == "xhand_right":
         point_cloud_wrapper = RobotPcldWrapper(
             config["robot_type"],
             particles_per_hand=config["particles_per_hand"],
@@ -92,7 +96,7 @@ def test_planning(config, save_dir, model, batch):
     )
 
     # then build a planner
-    planner = MPPIOptimizer(
+    planner = SkillMPPIOptimizer(
         sampler=sampler,
         point_cloud_wrapper=point_cloud_wrapper,
         model=model,
@@ -121,7 +125,7 @@ def test_planning(config, save_dir, model, batch):
         observation_batch=batch,
         visualize_k=config["visualize_k"],
         return_best=True,
-        num_skills_in_sequence=config["num_skills_in_sequence"],
+        # num_skills_in_sequence=config["num_skills_in_sequence"],
     )
 
     return best_actions

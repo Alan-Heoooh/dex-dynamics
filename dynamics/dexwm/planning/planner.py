@@ -12,7 +12,7 @@ sys.path.append(project_root)
 from dexwm.utils.wis3d_new import Wis3D
 from dexwm.utils.geometry import aligned_points_to_transformation_matrix
 from dexwm.utils.pcld_wrapper import PcldWrapper
-from dexwm.utils.utils_3d import rot_euler2axangle
+from dexwm.utils.utils_3d import rot_euler2axangle, batch_rot_euler2axangle
 
 def convert_state_dict_to_state_list(predictions_dict):
     """
@@ -145,7 +145,7 @@ class MPPIOptimizer:
             target_obj_pos = observation_batch.obj_final_pcd  # (n_points, 3)
             target_obj_pos = torch.from_numpy(target_obj_pos[0]).to(self.device).to(torch.float32)
 
-            target_obj_pos = np.load("/home/coolbot/data/target_shape/K.npy")
+            target_obj_pos = np.load("/home/coolbot/data/target_shape/X.npy")
             target_obj_pos_center = np.mean(target_obj_pos, axis=0)
             target_obj_pos = target_obj_pos - target_obj_pos_center
             target_obj_pos = target_obj_pos * 1.4
@@ -523,6 +523,296 @@ class MPPIOptimizer:
             return best_metadata, best_actions, best_predictions
         else:
             return best_metadata
+        
+
+class SkillMPPIOptimizer:
+    def __init__(
+        self,
+        sampler,
+        point_cloud_wrapper,
+        model,
+        objective,
+        a_dim,
+        horizon,
+        num_samples,
+        gamma,
+        config,
+        logger,
+        num_iters=3,
+        log_every=1,
+        device="cuda",
+    ):
+        self.obj_fn = objective
+        self.sampler = sampler
+        self.point_cloud_wrapper: PcldWrapper = point_cloud_wrapper
+        self.model = model
+        self.horizon = horizon
+        self.a_dim = a_dim
+        self.num_samples = num_samples
+        self.gamma = gamma
+        self.num_iters = num_iters
+
+        self.update_std = config["update_std"]
+        self.config = config
+        self.logger = logger
+        self.device = device
+
+        self.debug = config["debug"]
+
+        self.robot_type = config["robot_type"]
+        robot_config = config["robots"][self.robot_type]
+
+        # init_std = robot_config["init_std"]
+        # self.init_std = np.array(init_std).astype(np.float32)
+        # self.init_std[3:6] = np.deg2rad(self.init_std[3:6])
+        # self.init_std[3:6] = rot_euler2axangle(self.init_std[3:6], axes="sxyz")
+        # assert len(self.init_std.shape) == 1 and self.init_std.shape[0] == self.a_dim
+        # self.init_std = np.expand_dims(self.init_std, 0).repeat(self.horizon, axis=0)
+        # else:
+        #     raise NotImplementedError(f"Unknow std shape {self.init_std.shape}")
+
+        """initialize point cloud wrapper"""
+        # self.init_action = np.array(robot_config["init_action"]).astype(np.float32)
+        # self.init_action[3:6] = np.deg2rad(self.init_action[3:6])
+        self.init_action = robot_config["init_action"]
+
+        self.log_every = log_every
+        self._model_prediction_times = list()
+
+    def update_dist(self, samples, scores):
+        # actions: array with shape [num_samples, time, action_dim]
+        # scores: array with shape [num_samples]
+        scaled_rews = self.gamma * (scores - np.max(scores))  # all positive
+
+        # exponentiated scores
+        exp_rews = np.exp(scaled_rews)
+
+        # weigh samples by exponentiated scores to bias sampling for future iterations
+        softmax_prob = exp_rews / (np.sum(exp_rews, axis=0) + 1e-10)
+        mu = np.sum(softmax_prob * samples, axis=0)
+        print(f"max prob in the softmax prob list: {softmax_prob.max()}")
+        # mu = np.sum(exp_rews * samples, axis=0) / (np.sum(exp_rews, axis=0) + 1e-10)
+        # pdb.set_trace()
+
+        # prior knowledge: the end effector should not move along z axis
+        # mu[:, -1] = 0
+        if self.update_std:
+            std = np.sqrt(np.sum(softmax_prob * (samples - mu) ** 2, axis=0))
+        else:
+            std = self.init_std
+
+        return mu, std  # self.init_std
+
+    def plan(
+        self,
+        t,
+        log_dir,
+        observation_batch,
+        init_mean=None,
+        visualize_k=False,
+        return_best=False,
+    ):
+        start_start_time = time.time()
+
+        os.makedirs(log_dir, exist_ok=True)
+
+        # Get initial and target object poses from dataset
+        if self.config["real_world"]:
+            init_obj_pos = observation_batch["obj_init_pcd"]  # (n_points, 3)
+            init_obj_pos = torch.from_numpy(init_obj_pos).to(self.device).to(torch.float32)
+            target_obj_pos = observation_batch["obj_final_pcd"]  # (n_points, 3)
+            target_obj_pos = torch.from_numpy(target_obj_pos).to(self.device).to(torch.float32)
+        else:   
+            init_obj_pos = observation_batch.obj_init_pcd  # (n_points, 3)
+            init_obj_pos = torch.from_numpy(init_obj_pos[0]).to(self.device).to(torch.float32)
+
+            # z_coords = init_obj_pos[:, 2]
+            # mask = z_coords < 0
+            # init_obj_pos[mask, 2] = init_obj_pos[mask, 2] * 2
+
+            target_obj_pos = observation_batch.obj_final_pcd  # (n_points, 3)
+            target_obj_pos = torch.from_numpy(target_obj_pos[0]).to(self.device).to(torch.float32)
+
+            target_obj_pos = np.load("/home/coolbot/data/target_shape/K.npy")
+            target_obj_pos_center = np.mean(target_obj_pos, axis=0)
+            target_obj_pos = target_obj_pos - target_obj_pos_center
+            target_obj_pos = target_obj_pos * 1.2
+            target_obj_pos = torch.from_numpy(target_obj_pos).to(self.device).to(torch.float32)
+
+        init_obj_pos = init_obj_pos.repeat(self.config['num_samples'], 1, 1) # (n_sample, n_particles_obj, 3)
+
+        if self.debug:
+            gt_init_hand_pos = observation_batch.hand_init_pcd # (n_hand_points, 3)
+            gt_target_hand_pos = observation_batch.hand_final_pcd # (n_hand_points, 3)
+
+        #################################################################################
+        particle_type = torch.cat(
+            [
+                torch.full((n, 1), i, dtype=torch.int)
+                for i, n in enumerate(
+                    [
+                        self.config["particles_per_obj"],
+                        self.config["particles_per_hand"],
+                    ]
+                )
+            ],
+            dim=0,
+        ).to(self.device)
+        
+        # sample actions
+        sampling_start_time = time.time()
+        num_skills_per_sample = self.config["num_skills_per_sample"]
+        skills_config = self.sampler.create_skills_config_from_yaml(self.config)
+        random_actions, random_skills_sequence = self.sampler.sample_random_skill_sequences(
+            num_samples=self.config["num_samples"],
+            skills_config=skills_config,
+            num_skills_per_sample=num_skills_per_sample,
+        )
+        print(f"Sampling time: {time.time() - sampling_start_time:.2f} seconds")
+        random_skills_sequence = np.array(random_skills_sequence)
+        # random_actions [n_samples, T, n_actions]
+
+        predictions_list = []
+        for i in range(num_skills_per_sample):
+            # generate rotate angle of z axis
+            # 1) sample all thetas once
+            thetas = random_thetas_div_pi(
+                N=self.config["num_samples"],
+                min_div=1,
+                max_div=4,
+            )
+
+            # 2) process random_actions
+            random_skill  = random_skills_sequence[:, i]        # (n_samples,)
+            random_action = random_actions[:, i, :]             # (n_samples, n_action)
+            random_action = process_action_batch(
+                actions_np=random_action,
+                thetas=thetas,
+                device=self.device,
+            )
+
+            # 3) build and process init_action
+            init_action_np = np.array([self.init_action[s] for s in random_skill], dtype=np.float32)
+            init_action = process_action_batch(
+                actions_np=init_action_np,
+                thetas=thetas,
+                device=self.device,
+            )
+            
+            self.point_cloud_wrapper.set_init_params(action_vec=init_action)
+            self.point_cloud_wrapper.reset()
+
+            init_hand_pos = self.point_cloud_wrapper.forward() # (n_sample, n_particles_hand, 3)
+            B, _, _ = init_hand_pos.shape
+
+            init_pos = torch.cat((init_obj_pos, init_hand_pos), dim=-2) # (n_samples, n_particles, 3)
+
+            # relative action
+            latent_action_samples = random_action - init_action # (n_samples, n_action)
+
+            latent_action_samples = latent_action_samples[:, None, :] # (n_samples, 1, n_action)
+            pcld_action_samples, sample_states = self.point_cloud_wrapper.convert(latent_action_samples)
+            B, T, _, _ = pcld_action_samples.shape
+
+            # Construct full action samples including object actions (zeros)
+            action_samples = torch.cat(
+                [
+                    torch.zeros(
+                        (B, T, self.config["particles_per_obj"], 3),
+                        device=pcld_action_samples.device,
+                    ),
+                    pcld_action_samples,
+                ],
+                dim=2,
+            ) # (n_samples, T, n_particles, 3)
+            # Run forward prediction with the model
+            pred_start_time = time.time()
+            with torch.no_grad():
+                # Split samples into batches to avoid GPU memory issues
+                n_sample_batch = self.config["sample_batch_size"]
+                init_pos_batches = torch.split(init_pos, n_sample_batch, dim=0)
+                action_batches = torch.split(action_samples, n_sample_batch, dim=0)
+                
+                # Initialize lists to collect predictions
+                obj_obs_list = []
+                inhand_list = []
+                
+                # Process each batch sequentially
+                for init_pos_batch, action_batch in zip(init_pos_batches, action_batches):
+                    batch_pred = self.model.predict_step(
+                        init_pos_batch,          # (current_batch_size, n_particles, 3)
+                        action_batch,      # (current_batch_size, T, n_particles, 3)
+                        particle_type      # (n_particles,)
+                    )
+                    obj_obs_list.append(batch_pred['object_obs'])
+                    inhand_list.append(batch_pred['inhand'])
+                
+                # Combine batch predictions
+                predictions = {
+                    'init_hand_pos': init_hand_pos, # (n_samples, n_particles_hand, 3)
+                    'init_object_pos': init_obj_pos, # (n_samples, n_particles_object, 3)
+                    'object_obs': torch.cat(obj_obs_list, dim=0), # (n_samples, T, n_particles_obj, 3)
+                    'inhand': torch.cat(inhand_list, dim=0) # (n_samples, T, n_particles_hand, 3)
+                }
+            predictions_list.append(predictions)
+            prediction_time = time.time() - pred_start_time
+            self._model_prediction_times.append(prediction_time)
+            predict_obj_pose = predictions["object_obs"] # (n_samples, T, n_obj, 3)
+            # update init object pos
+            init_obj_pos = predict_obj_pose[:, 0, :, :] # (n_samples, n_obj, 3)
+
+        last_state_rewards = (
+            self.obj_fn.eval(predictions, target_obj_pos, last_state_only=True)
+            .cpu()
+            .numpy()[:, None, None]
+        )  # shape [num_samples, 1, 1]
+        best_last_state_indices = np.argsort(last_state_rewards.flatten())[0]
+        best_last_state_rewards = last_state_rewards[best_last_state_indices]
+
+        print(f"Best last reward is {best_last_state_rewards[0][0]:.4f} at index {best_last_state_indices}")
+        print(f"Skill sequence is {random_skills_sequence[best_last_state_indices]}")
+
+
+        # visualize the best action
+        wis3d = Wis3D(
+            out_folder=log_dir,
+            sequence_name=f"best_action",
+            xyz_pattern=("x", "-y", "-z"),
+        )
+        wis3d.set_scene_id(0)
+        for i in range(num_skills_per_sample):
+            skill = random_skills_sequence[best_last_state_indices][i]
+            action = random_actions[best_last_state_indices, i, :]
+            predictions = predictions_list[i]
+
+            init_object_pos = predictions["init_object_pos"][best_last_state_indices] # (n_obj, 3)
+            init_hand_pos = predictions["init_hand_pos"][best_last_state_indices] # (n_hand, 3)
+            pred_object_pos = predictions["object_obs"][best_last_state_indices][0] # (n_obj, 3)
+            pred_hand_pos = predictions["inhand"][best_last_state_indices][0] # (n_hand, 3)
+
+            # import pdb; pdb.set_trace()
+
+            wis3d.add_point_cloud(init_object_pos, colors=torch.tensor([[255, 0, 0]]).repeat(self.config["particles_per_obj"], 1), name="init_obj_pcld")
+            wis3d.add_point_cloud(init_hand_pos, colors=torch.tensor([[255, 0, 0]]).repeat(self.config["particles_per_hand"], 1), name="init_hand_pcld")
+            wis3d.add_point_cloud(target_obj_pos, colors=torch.tensor([[0, 0, 255]]).repeat(self.config["particles_per_obj"], 1), name="target_obj_pcld")
+            wis3d.add_point_cloud(pred_object_pos, colors=torch.tensor([[0, 255, 0]]).repeat(self.config["particles_per_obj"], 1), name="pred_obj_pcld")
+            wis3d.add_point_cloud(pred_hand_pos, colors=torch.tensor([[0, 255, 0]]).repeat(self.config["particles_per_hand"], 1), name="pred_hand_pcld")
+            wis3d.increase_scene_id()
+
+
+        # best_action_prediction = predictions[best_last_state_indices]
+
+        # Save the global best result
+        # os.makedirs(f"{log_dir}/best_plans/final", exist_ok=True)
+        # torch.save(best_action_prediction, f"{log_dir}/best_plans/final/best_action.pt")
+        
+        end_end_time = time.time()
+        print(f"Total planning time: {end_end_time - start_start_time:.2f} seconds")
+
+        if return_best:
+            return best_action, best_action_prediction
+        else:
+            return best_action
 
 
 def rotate_around_world_z_np(pose: np.ndarray, theta: float) -> np.ndarray:
@@ -556,3 +846,93 @@ def rotate_around_world_z_np(pose: np.ndarray, theta: float) -> np.ndarray:
     
     # Return as a NumPy array
     return np.array([x_new, y_new, z_new, roll_new, pitch_new, yaw_new])
+
+
+def rotate_batch_around_world_z_np(poses: np.ndarray, thetas: np.ndarray) -> np.ndarray:
+    """
+    Rotate a batch of 3D poses around the WORLD's Z-axis by different angles.
+
+    Parameters
+    ----------
+    poses : np.ndarray, shape (N, 6)
+        Original poses, each [x, y, z, roll, pitch, yaw].
+    thetas : np.ndarray, shape (N,)
+        Rotation angles (in radians) for each pose.
+
+    Returns
+    -------
+    rotated_poses : np.ndarray, shape (N, 6)
+        The rotated poses [x_new, y_new, z_new, roll_new, pitch_new, yaw_new].
+    """
+    poses = np.asarray(poses)
+    thetas = np.asarray(thetas)
+
+    # sanity checks
+    assert poses.ndim == 2 and poses.shape[1] == 6, "poses must be (N, 6)"
+    assert thetas.ndim == 1 and thetas.shape[0] == poses.shape[0], "thetas must be (N,) matching poses"
+
+    # split out components
+    x, y, z, roll, pitch, yaw = [poses[:, i] for i in range(6)]
+
+    # precompute sin/cos
+    c, s = np.cos(thetas), np.sin(thetas)
+
+    # rotate positions
+    x_new = x * c - y * s
+    y_new = x * s + y * c
+    z_new = z  # unchanged
+
+    # orientations
+    roll_new  = roll
+    pitch_new = pitch
+    yaw_new   = yaw + thetas
+
+    # stack back into (N,6)
+    return np.stack([x_new, y_new, z_new, roll_new, pitch_new, yaw_new], axis=1)
+
+
+def random_thetas_div_pi(N: int, min_div: int = 1, max_div: int = 10) -> np.ndarray:
+    """
+    Generate N random angles of the form theta = pi / d,
+    where each divisor d is drawn uniformly from [min_div, max_div].
+    
+    Parameters
+    ----------
+    N : int
+        Number of thetas to generate.
+    min_div : int
+        Minimum integer divisor (>=1).
+    max_div : int
+        Maximum integer divisor.
+        
+    Returns
+    -------
+    thetas : np.ndarray, shape (N,)
+        Array of angles = pi / d_i.
+    """
+    # sample N random integers in [min_div, max_div]
+    divisors = np.random.randint(min_div, max_div + 1, size=N)
+    # compute theta = pi / d
+    thetas = np.pi / divisors
+    return thetas
+
+def process_action_batch(
+    actions_np: np.ndarray,
+    thetas: np.ndarray,
+    device: torch.device,
+    axes: str = "sxyz",
+) -> torch.Tensor:
+    """
+    - actions_np: shape (n_samples, n_action)
+    - thetas:      shape (n_samples,)
+    Returns a float32 torch.Tensor on `device`.
+    """
+    # work on a copy so we don’t clobber the caller’s array
+    a = actions_np.copy().astype(np.float32)
+
+    a[:, 3:6] = np.deg2rad(a[:, 3:6])
+    a[:, :6] = rotate_batch_around_world_z_np(poses=a[:, :6], thetas=thetas)
+
+    a[:, 3:6] = batch_rot_euler2axangle(a[:, 3:6], axes=axes)
+
+    return torch.from_numpy(a).to(device).float()

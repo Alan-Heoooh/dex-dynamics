@@ -144,3 +144,31 @@ def rot_euler2axangle(rotation, axes="sxyz"):
         axis_angle = np.asarray(axis_angle, dtype=rotation.dtype)
         
     return axis_angle
+
+
+def batch_rot_euler2axangle(rotations, axes="sxyz"):
+    """
+    Convert a batch of Euler angles [roll, pitch, yaw] -> axis-angle vectors.
+    Accepts either a PyTorch tensor or a NumPy array (shape = (N, 3)).
+
+    :param rotations: Batch of 3D rotation angles [rx, ry, rz] in radians.
+                      Shape (N, 3). Accepts torch.Tensor or np.ndarray.
+    :param axes: The axes convention to use. Default is "sxyz".
+    :return: A batch of vectors [ax, ay, az] where for each row,
+             axis = [ax, ay, az]/angle, angle = norm([ax, ay, az]).
+             Shape (N, 3), same type as input.
+    """
+    if not (isinstance(rotations, (torch.Tensor, np.ndarray)) and rotations.ndim == 2 and rotations.shape[1] == 3):
+        raise ValueError(f"Input must be a Tensor or ndarray of shape (N, 3), got {type(rotations)} with shape {rotations.shape}")
+
+    axis_angles = []
+    for i in range(rotations.shape[0]):
+        axis_angle = rot_euler2axangle(rotations[i], axes=axes)
+        axis_angles.append(axis_angle)
+
+    if isinstance(rotations, torch.Tensor):
+        # Stack tensors along a new dimension (dim=0)
+        return torch.stack(axis_angles, dim=0)
+    else:
+        # Stack numpy arrays along the first axis (axis=0)
+        return np.stack(axis_angles, axis=0)

@@ -24,15 +24,16 @@ visualize_k: 1
 pretrained_path: "/home/coolbot/Documents/git/dex-dynamics/dynamics/exps/all_skills/train_tb_logs/all_skills/version_0/checkpoints/epoch=282-step=96220-val_loss=0.00523.ckpt"
 dynamics_config_path: "/home/coolbot/Documents/git/dex-dynamics/dynamics/exps/all_skills/train_tb_logs/all_skills/version_0/hparams.yaml"
 
-horizon: 1 # 1
+horizon: 1
+num_skills_per_sample: 6 # 1
 # history_len: 30
 
 real_world: False
 
 test_batch_size: 1
 
-num_execution_iterations: 2 # 30
-num_samples: 200
+num_execution_iterations: 1 # 30
+num_samples: 2000 # 200
 num_z_rotations: 8 # 16
 num_skills_in_sequence: 2
 sample_batch_size: 20
@@ -43,9 +44,9 @@ update_std: False
 
 SKILLS:
   - 2_fingers_pinching
-  # - palm_pressing
+  - palm_pressing
   # - thumb_pressing
-  - thumb_pinching
+  # - thumb_pinching
 
 robot_type: "ability_hand_right" # "ability_hand_right"
 robots:
@@ -126,11 +127,6 @@ loss:
   penetration_threshold: -0.02
 
 
-
-# object_pose: 
-#   p: [0.45, 0.16, 0.08]
-#   q: [1, 0, 0, 0]
-
 # goal_offset: [0, 0, 0.15]
 
 # mesh: ""
@@ -159,6 +155,3 @@ loss:
 #   num_repeat: 5
 #   horizon: 30
 #   beta: 0.3
-
-# initial_ee_pos: [0.5, 0, 0.32]
-# pushing_initialization_pos: [0.5, 0, 0.325]

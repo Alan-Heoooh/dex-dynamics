@@ -76,8 +76,6 @@ def sample_robot_point_cloud(
     if save_path is not None:
         save_path = os.path.join(save_path, f"{num_samples}_pc.pt")
         torch.save(pclds, save_path)
-    # else:
-    #     save_path = f"{num_samples}_pc.pt"
 
     return pclds
 
@@ -201,60 +199,7 @@ def get_robot_poses(
         # robot_poses.append(Tw_w2B @ pose)
         # robot_poses.append(Tw_w2B @ pose)
     return robot_poses
-    # return np.stack(robot_poses, axis = 0)
 
-
-# def main(robot_name, num_samples=4096, finger_tips=True):
-#     urdf_path, return_joint_names, test_qpos = get_args(robot_name)
-#     wis3d = Wis3D(
-#         out_folder="wis3d",
-#         sequence_name=f"{robot_name}_{num_samples}",
-#         xyz_pattern=("x", "-y", "-z"),
-#     )
-#     meshes = return_mesh(
-#         urdf_path, link_names=return_joint_names if finger_tips else None
-#     )
-
-#     sample_pc = sample_volumes(meshes, num_samples)
-#     pclds = {k: torch.from_numpy(v) for k, v in sample_pc.items()}
-#     torch.save(pclds, f"{robot_name}_{num_samples}_use_{finger_tips}_pc.pt")
-
-#     robot_poses = get_robot_poses(urdf_path, link_names=pclds.keys(), qpos=test_qpos)
-#     pcld_ordered = [pclds[k].float() for k in robot_poses.keys()]
-#     pcld_len = torch.cat(
-#         [
-#             torch.tensor([0]),
-#             torch.cumsum(torch.tensor([len(pc) for pc in pcld_ordered]), dim=0),
-#         ]
-#     )
-#     pclds_cat = torch.cat(pcld_ordered, dim=0)  # (num_samples, 3)
-#     poses = torch.zeros((len(pclds_cat), 4, 4)).float()
-
-#     for i in range(10):
-#         qpos = np.random.randn(len(test_qpos))
-#         robot_poses = get_robot_poses(urdf_path, link_names=pclds.keys(), qpos=qpos)
-#         for j, (link_name, pose) in enumerate(robot_poses.items()):
-#             poses[pcld_len[j] : pcld_len[j + 1]] = torch.from_numpy(pose).float()
-
-#         verts = (
-#             torch.einsum("ni,nji->nj", pclds_cat, poses[:, :3, :3]) + poses[:, :3, 3]
-#         )  # (num_samples, 3)
-#         wis3d.add_point_cloud(verts, name="point clouds")
-
-#         wis3d.add_robot(
-#             urdf_path,
-#             qpos=qpos,
-#         )
-#         wis3d.increase_scene_id()
-
-
-# if __name__ == "__main__":
-#     parser = argparse.ArgumentParser()
-#     parser.add_argument("--robot", type=str, default="allegro")
-#     parser.add_argument("--num_samples", type=int, default=4096)
-#     parser.add_argument("--finger_tips", type=bool, default=True)
-#     args = parser.parse_args()
-#     main(args.robot, args.num_samples, args.finger_tips)
 
 if __name__ == "__main__":
     from dexwm.utils.macros import ASSETS_DIR

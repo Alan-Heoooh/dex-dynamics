@@ -195,8 +195,9 @@ class CorrelatedNoiseSampler(GaussianSampler):
                 noise_samples.append(noise_samp)
 
         noise_samples = np.stack(noise_samples, axis=1)
-        # noise_samples[:] = mu
-        # noise_samples[:, :] = [0, 0.2, 0]
+
+        noise_samples[:, :, 6:] =  np.abs(noise_samples[:, :, 6:])  # make the last 3 dimensions positive
+        # import pdb; pdb.set_trace()
         
         return np.expand_dims(mu, 0) + noise_samples
 

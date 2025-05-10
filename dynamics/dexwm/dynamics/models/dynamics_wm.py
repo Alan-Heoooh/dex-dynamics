@@ -596,7 +596,10 @@ class DynamicsPredictor(pl.LightningModule):
 
         pos_seq_object = []
 
-        particle_pos = init_pos.unsqueeze(0).repeat(B, 1, 1)
+        if len(init_pos.shape) == 2:
+            particle_pos = init_pos.unsqueeze(0).repeat(B, 1, 1)
+        else:
+            particle_pos = init_pos # (B, N, 3)
         node_type = node_type.unsqueeze(0).repeat(B, 1, 1)
         start_time = time.time()
 
