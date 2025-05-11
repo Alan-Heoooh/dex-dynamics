@@ -1,0 +1,83 @@
+log_name: all_skills
+exp_name: /home/coolbot/data/exps/all_skills
+
+debug: false
+test_only: false
+pretrained_path: 
+
+data_dir: "/home/coolbot/data/rewarped/pinch_trajectories_allegro_hand_urdf"
+
+
+# data_dir_prefix: dexycb
+rebuild_dataset: true
+particles_per_obj: 300
+particles_per_hand: 200
+n_points: [300, 200]
+num_workers: 16
+
+# data augmentation
+data_augment: false # true
+# num_augment: 10
+augment_along_z_axis: true
+hand_sampling_augment: true
+object_sampling_augment: true        
+
+# negative data
+negative_data: true
+negative_data_ratio: 0.5
+
+# graph information
+use_final_graph: false
+# inner graph
+use_knn_inner: false
+k_neighbors_inner: 10
+connectivity_radius_inner: 0.025 # 0.025
+# outer graph
+use_knn_outer: false
+k_neighbors_outer: 2
+connectivity_radius_outer: 0.04 # 0.025
+# filter edges by distance
+filter_edges_by_distance_inner: false
+filter_edges_by_distance_outer: false
+edge_distance_limit: 0.06
+
+mask_fingertips: false
+rigid_only: false
+gnn_type: dpi
+has_rigid_motion: false
+loss_by_n_points: 1
+history_length: 1
+train_sequence_length: 5
+test_sequence_length: 5 # 2
+predict_sequence_length: 1
+action_per_frames: 1 # 2
+logging_level: INFO
+loss_type: mse # emd_cpu
+pos_loss_weight: 1
+object_weights: [1, 1]
+metric_names: [chamfer, emd, mse]   
+chamfer_emd_weights: 
+    chamfer: 0.5 # 0.3 
+    emd: 0.5 # 0.7
+teacher_forcing_thres: 0.1
+rigid_dim: 6
+feature_dim_action: 3
+euler_angle_bound: 45
+
+
+dpi_net: 
+    hidden_size_edge: 150
+    hidden_size_effect: 150
+    hidden_size_node: 150
+    obj_phy_feat_len: 16
+    n_layers: 3
+    propgation_step: 3
+    history_before_rigid: false
+
+optimizer: 
+    lr: 0.0001
+    max_epoch: 200
+train_batch_size: 4 # 16
+test_batch_size: 4
+visualize_every: 20
+log_every_n_steps: 20

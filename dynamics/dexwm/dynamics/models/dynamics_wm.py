@@ -8,7 +8,6 @@ from torch import nn
 import torch_geometric as pyg
 import random
 
-# from pytorch_memlab import profile, profile_every, MemReporter
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from dexwm.dynamics.dataset.dataset import (
@@ -107,7 +106,6 @@ class DynamicsPredictor(pl.LightningModule):
         N = data.num_nodes // B
 
         assert self.his_len == 1, "only support history length = 1"
-
         if t == 0:
             # last history state is the graph built when loading the data
             window = data.clone("edge_index", "edge_attr", "batch", "ptr")
@@ -241,18 +239,18 @@ class DynamicsPredictor(pl.LightningModule):
         # gt_pos = data.next_pos
         gt_pos = data.pos[:, t + 1].view(B, N, -1)
         if train:
-            # position_loss, position_losses = self.position_loss(
-            #     pred_pos, gt_pos, return_losses=True
-            # )
-            position_loss, position_losses, chamfer_loss, emd_loss = self.position_loss(
+            position_loss, position_losses = self.position_loss(
                 pred_pos, gt_pos, return_losses=True
             )
+            # position_loss, position_losses, chamfer_loss, emd_loss = self.position_loss(
+            #     pred_pos, gt_pos, return_losses=True
+            # )
 
             loss["train_pos"] = position_loss
             loss["train_pos_losses"] = position_losses
 
-            loss["chamfer"] = chamfer_loss
-            loss["emd"] = emd_loss
+            # loss["chamfer"] = chamfer_loss
+            # loss["emd"] = emd_loss
 
         else:
             loss["chamfer"] = self.chamfer_loss(pred_pos, gt_pos)
@@ -363,8 +361,8 @@ class DynamicsPredictor(pl.LightningModule):
             loss, pred_pos, gts = self.forward(batch, i, pred_pos, True)
 
             train_pos_loss += loss["train_pos"]
-            train_chamfer_loss += loss["chamfer"]
-            train_emd_loss += loss["emd"]
+            # train_chamfer_loss += loss["chamfer"]
+            # train_emd_loss += loss["emd"]
 
             box_losses += torch.tensor(loss["train_pos_losses"])
 
@@ -372,73 +370,76 @@ class DynamicsPredictor(pl.LightningModule):
                 pred_pos = gts
 
             if (self.train_seq % self.config["visualize_every"] == 0):
-                for vis_idx in range(B):
-                    self.wis3d_train.add_point_cloud(
-                        batch.pos[:, i].view(B, -1, 3)[vis_idx][
-                            : self.config["particles_per_obj"]
-                        ],
-                        torch.tensor([[255, 0, 0]]).repeat(
-                            self.config["particles_per_obj"], 1
-                        ),
-                        name="current_obj_pos",
-                    )
-                    self.wis3d_train.add_point_cloud(
-                        batch.pos[:, i].view(B, -1, 3)[vis_idx][
-                            self.config["particles_per_obj"] :
-                        ],
-                        torch.tensor([[255, 0, 0]]).repeat(
-                            self.config["particles_per_hand"], 1
-                        ),
-                        name="current_hand_pos",
-                    )
+                # for vis_idx in range(B):
+                if batch_idx == 0:
+                    for vis_idx in range(1):
+                        # import pdb; pdb.set_trace()
+                        self.wis3d_train.add_point_cloud(
+                            batch.pos[:, i].view(B, -1, 3)[vis_idx][
+                                : self.config["particles_per_obj"]
+                            ],
+                            torch.tensor([[255, 0, 0]]).repeat(
+                                self.config["particles_per_obj"], 1
+                            ),
+                            name="current_obj_pos",
+                        )
+                        self.wis3d_train.add_point_cloud(
+                            batch.pos[:, i].view(B, -1, 3)[vis_idx][
+                                self.config["particles_per_obj"] :
+                            ],
+                            torch.tensor([[255, 0, 0]]).repeat(
+                                self.config["particles_per_hand"], 1
+                            ),
+                            name="current_hand_pos",
+                        )
 
-                    self.wis3d_train.add_point_cloud(
-                        pred_pos.view(B, -1, 3)[vis_idx][
-                            : self.config["particles_per_obj"]
-                        ],
-                        torch.tensor([[0, 255, 0]]).repeat(
-                            self.config["particles_per_obj"], 1
-                        ),
-                        name="pred_obj_pos",
-                    )
-                    self.wis3d_train.add_point_cloud(
-                        pred_pos.view(B, -1, 3)[vis_idx][
-                            self.config["particles_per_obj"] :
-                        ],
-                        torch.tensor([[0, 255, 0]]).repeat(
-                            self.config["particles_per_hand"], 1
-                        ),
-                        name="pred_hand_pos",
-                    )
+                        self.wis3d_train.add_point_cloud(
+                            pred_pos.view(B, -1, 3)[vis_idx][
+                                : self.config["particles_per_obj"]
+                            ],
+                            torch.tensor([[0, 255, 0]]).repeat(
+                                self.config["particles_per_obj"], 1
+                            ),
+                            name="pred_obj_pos",
+                        )
+                        self.wis3d_train.add_point_cloud(
+                            pred_pos.view(B, -1, 3)[vis_idx][
+                                self.config["particles_per_obj"] :
+                            ],
+                            torch.tensor([[0, 255, 0]]).repeat(
+                                self.config["particles_per_hand"], 1
+                            ),
+                            name="pred_hand_pos",
+                        )
 
-                    self.wis3d_train.add_point_cloud(
-                        gts.view(B, -1, 3)[vis_idx][: self.config["particles_per_obj"]],
-                        torch.tensor([[0, 0, 255]]).repeat(
-                            self.config["particles_per_obj"], 1
-                        ),
-                        name="gt_obj_pos",
-                    )
-                    self.wis3d_train.add_point_cloud(
-                        gts.view(B, -1, 3)[vis_idx][self.config["particles_per_obj"] :],
-                        torch.tensor([[0, 0, 255]]).repeat(
-                            self.config["particles_per_hand"], 1
-                        ),
-                        name="gt_hand_pos",
-                    )
-                    self.wis3d_train.increase_scene_id()
+                        self.wis3d_train.add_point_cloud(
+                            gts.view(B, -1, 3)[vis_idx][: self.config["particles_per_obj"]],
+                            torch.tensor([[0, 0, 255]]).repeat(
+                                self.config["particles_per_obj"], 1
+                            ),
+                            name="gt_obj_pos",
+                        )
+                        self.wis3d_train.add_point_cloud(
+                            gts.view(B, -1, 3)[vis_idx][self.config["particles_per_obj"] :],
+                            torch.tensor([[0, 0, 255]]).repeat(
+                                self.config["particles_per_hand"], 1
+                            ),
+                            name="gt_hand_pos",
+                        )
+                        self.wis3d_train.increase_scene_id()
 
         # normalize the loss by the sequence length
         train_pos_loss /= self.train_seq_len
-        train_chamfer_loss /= self.train_seq_len
-        train_emd_loss /= self.train_seq_len
+        # train_chamfer_loss /= self.train_seq_len
+        # train_emd_loss /= self.train_seq_len
 
         box_losses /= self.train_seq_len
 
         self.log("train_loss", train_pos_loss, prog_bar=True, on_epoch=True, on_step=False, batch_size=batch.num_graphs, )
 
-        self.log("train_chamfer_loss", train_chamfer_loss, prog_bar=True, on_epoch=True, on_step=False, batch_size=batch.num_graphs,)
+        # self.log("train_chamfer_loss", train_chamfer_loss, prog_bar=True, on_epoch=True, on_step=False, batch_size=batch.num_graphs,)
 
-        self.log("train_emd_loss", train_emd_loss, prog_bar=True, on_epoch=True, on_step=False, batch_size=batch.num_graphs,)
+        # self.log("train_emd_loss", train_emd_loss, prog_bar=True, on_epoch=True, on_step=False, batch_size=batch.num_graphs,)
 
         # for i, loss in enumerate(box_losses.tolist()):
         #     self.log(f"train_obj_loss_{i}",loss,prog_bar=False, on_epoch=True, on_step=False,batch_size=batch.num_graphs,)

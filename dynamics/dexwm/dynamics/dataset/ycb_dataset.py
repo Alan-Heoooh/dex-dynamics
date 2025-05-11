@@ -309,7 +309,7 @@ class DexYCBDataset(pyg.data.InMemoryDataset):
                 _, hand_sample_indices = furthest_point_sampling(
                     hand_verts[:, 0], self.config["particles_per_hand"]
                 )
-                hand_pcld = hand_verts[
+                hand_pcld = hand_verts[ 
                     hand_sample_indices
                 ]  # (particles_per_hand, n, 3)
 

@@ -16,7 +16,7 @@ from utils.utils import *
 from utils.visualizer import *
 from dynamics.models import DynamicsPredictor
 # from dynamics.dataset import DexYCBDataModule
-from dynamics.dataset import DeformableDataModule
+from dynamics.dataset import DeformableDataModule, SimulationDataModule
 
 input_dim, encoding_dim = 5, 5
 
@@ -25,7 +25,7 @@ def train(config, save_dir):
     # data_module = DynamicsDataModule(config)
     model = DynamicsPredictor(config)
     
-    data_module = DeformableDataModule(config)
+    data_module = SimulationDataModule(config)
 
     best_checkpoint_callback = ModelCheckpoint(
         monitor="val_loss",
@@ -74,11 +74,8 @@ def train(config, save_dir):
 
 def test(config, stats, save_dir, best_model_path):
     model = DynamicsPredictor.load_from_checkpoint(checkpoint_path=best_model_path)
-    # model = AutoEncoder.load_from_checkpoint(checkpoint_path=best_model_path,
-    #                                         input_dim=input_dim, encoding_dim=encoding_dim,
-    #                                         stats=stats, config=config)
 
-    data_module = DeformableDataModule(config)
+    data_module = SimulationDataModule(config)
 
     trainer = pl.Trainer(
         accelerator="gpu",
@@ -103,7 +100,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "-c",
         "--config",
-        default=os.path.join(DYNAMICS_DIR, "deformable_dynamics_config.yaml"),
+        # default=os.path.join(DYNAMICS_DIR, "deformable_dynamics_config.yaml"),
+        default=os.path.join(DYNAMICS_DIR, "simulation_dynamics_config.yaml"),
         type=str,
         help="config file path (default: dynamics_config.yaml)",
     )
@@ -123,9 +121,6 @@ if __name__ == "__main__":
     )
 
     config = ConfigParser.from_dynamics_args(parser)
-    # stats = load_h5_data(
-    #     os.path.join(DATA_DIR, config["data_dir_prefix"], "train", "stats.h5")
-    # )
     save_dir = config["exp_name"]
 
     best_model_path = train(config, save_dir)

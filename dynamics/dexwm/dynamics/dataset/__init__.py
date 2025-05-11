@@ -1,2 +1,3 @@
 from .ycb_dataset import DexYCBDataModule
 from .deformable_dataset import DeformableDataModule
+from .simulation_dataset import SimulationDataModule
