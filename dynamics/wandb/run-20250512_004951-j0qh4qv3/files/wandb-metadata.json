@@ -1,0 +1,48 @@
+{
+  "os": "Linux-6.8.0-59-generic-x86_64-with-glibc2.35",
+  "python": "CPython 3.10.16",
+  "startedAt": "2025-05-12T07:49:51.653154Z",
+  "args": [
+    "--log_name",
+    "allegro_hand",
+    "--train_batch_size",
+    "8"
+  ],
+  "program": "/home/coolbot/Documents/git/dex-dynamics/dynamics/dexwm/dynamics/train.py",
+  "codePath": "dynamics/dexwm/dynamics/train.py",
+  "git": {
+    "remote": "git@github.com:Alan-Heoooh/dex-dynamics.git",
+    "commit": "b93a97970b61a8178870548bf4c220c3d356959c"
+  },
+  "email": "he0610@sjtu.edu.cn",
+  "root": ".",
+  "host": "coolbot-ASUS-TUF-Gaming-F15-FX507VI-FX507VI",
+  "executable": "/home/coolbot/anaconda3/envs/dynamics/bin/python",
+  "codePathLocal": "dexwm/dynamics/train.py",
+  "cpu_count": 10,
+  "cpu_count_logical": 16,
+  "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+  "gpu_count": 1,
+  "disk": {
+    "/": {
+      "total": "490679762944",
+      "used": "442873815040"
+    }
+  },
+  "memory": {
+    "total": "33261551616"
+  },
+  "cpu": {
+    "count": 10,
+    "countLogical": 16
+  },
+  "gpu_nvidia": [
+    {
+      "name": "NVIDIA GeForce RTX 4070 Laptop GPU",
+      "memoryTotal": "8585740288",
+      "cudaCores": 4608,
+      "architecture": "Ada"
+    }
+  ],
+  "cudaVersion": "12.8"
+}
