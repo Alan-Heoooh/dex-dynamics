@@ -148,6 +148,13 @@ if __name__ == "__main__":
         help="log name",
     )
 
+    parser.add_argument(
+        "--num_workers",
+        type=str,
+        default=None,
+        help="number of workers",
+    )
+
     args = parser.parse_args()
 
     config = ConfigParser.from_dynamics_args(parser)
@@ -160,6 +167,8 @@ if __name__ == "__main__":
         config.config["train_batch_size"] = int(args.train_batch_size)
     if args.log_name is not None:
         config.config["log_name"] = args.log_name
+    if args.num_workers is not None:
+        config.config["num_workers"] = int(args.num_workers)
 
     save_dir = config["exp_name"]
 
