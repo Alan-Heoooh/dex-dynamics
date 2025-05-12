@@ -12,7 +12,6 @@ spec:
     spec:
       containers:
         - name: gpu-container
-          # image: albert01102/cuda12.4.1_ubuntu22.04_embodiment:isaac-v1.1-nodisplay
           image: alanheoooh/dynamics:version-0.2
           command:
             - "/bin/bash"
