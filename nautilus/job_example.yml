@@ -1,0 +1,87 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: zihao-job-leap-hand
+  namespace: ucsd-haosulab
+spec:
+  ttlSecondsAfterFinished: 604800
+  template:
+    metadata:
+      labels:
+        nautilus.io/rl: "true"
+    spec:
+      containers:
+        - name: gpu-container
+          # image: albert01102/cuda12.4.1_ubuntu22.04_embodiment:isaac-v1.1-nodisplay
+          image: alanheoooh/dynamics:version-0.2
+          command:
+            - "/bin/bash"
+            - "-c"
+          args:
+            - |
+              cd /zihao-fast-vol/dex-dynamics/dynamics && 
+              python3 -m pip install -e . &&
+              python3 dexwm/dynamics/train.py --data_dir /zihao-fast-vol/rewarped/pinch_trajectories_leap_hand/ --log_name leap_hand --train_batch_size 32  --num_workers 20
+          resources:
+            requests:
+              cpu: "8"
+              memory: "32Gi"
+              nvidia.com/gpu: "1"
+              # ephemeral-storage: 600Gi
+            limits:
+              cpu: "16"
+              memory: "32Gi"
+              nvidia.com/gpu: "1"
+              # ephemeral-storage: 600Gi
+          volumeMounts:
+            - name: dshm
+              mountPath: /dev/shm
+            - name: zihao-fast-vol  # change this based on your own pvc
+              mountPath: /zihao-fast-vol # change this based on your own pvc
+      # nodeSelector:
+      #   nautilus.io/disktype: nvme
+      # volumes:
+        # - name: data
+        #   emptyDir: {}
+        # - name: source
+        #   persistentVolumeClaim:
+        #       claimName: bai-fast-vol
+      volumes:
+        - name: dshm # shared memory, required for the multi-worker dataloader
+          emptyDir:
+            medium: Memory
+        - name: zihao-fast-vol  # change this based on your own pvc
+          persistentVolumeClaim:
+            claimName: zihao-fast-vol  # change this based on your own pvc; you can get the pvc name of your created volume from "kubectl get pvc"
+
+      restartPolicy: Never
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: nvidia.com/gpu.product
+                    operator: In
+                    values:
+                      - NVIDIA-GeForce-RTX-4090
+                      # - NVIDIA-A100-80GB-PCIe-MIG-1g.10gb   # threaded multi-instance GPU
+                      - NVIDIA-A100-PCIE-40GB
+                      - NVIDIA-A100-80GB-PCIe
+                      - NVIDIA-A100-SXM4-80GB
+                      - NVIDIA-GeForce-RTX-3090
+                      - NVIDIA-L40    # similear to 3090, 48GB memory
+                      - NVIDIA-RTX-A6000  # 10% weaker than RTX 3090
+                      # - NVIDIA-A40    # 20% weaker than RTX 3090; we only have a handful of these GPUs
+                      - NVIDIA-A10    # 30% weaker than RTX 3090; we have quite a few; 24 GB memory
+                      # - NVIDIA-RTX-A4000  # 40% weaker than RTX 3090
+                      # - NVIDIA-GeForce-RTX-2080-Ti
+                  # - key: kubernetes.io/hostname
+                  #   operator: NotIn 
+                  #   values:
+                  #   - k8s-chase-ci-07.calit2.optiputer.net
+                  #   - ry-gpu-08.sdsc.optiputer.net
+                  #   - k8s-3090-02.clemson.edu
+                  #   - k8s-3090-01.clemson.edu
+                  #   - gpu-14.nrp.mghpcc.org
+                  #   - hcc-nrp-shor-c5226.unl.edu
+  backoffLimit: 0

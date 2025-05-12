@@ -1,0 +1,58 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: zihao-pod-4  # replace with "${USER_NAME}-{POD_NAME}"
+  namespace: ucsd-haosulab
+spec:
+  containers:
+    - name: gpu-container
+      # imagePullPolicy: Always
+      image: alanheoooh/dynamics:version-0.2
+      # image: nvidia/cuda:12.1.1-devel-ubuntu22.04
+      # args: ["/bin/sh", "-c", "sleep infinity"]
+      command: ["sh", "-c"]
+      args:
+        - |
+          cd /zihao-fast-vol/dex-dynamics/dynamics &&
+          python3 -m pip install -e . &&
+          sleep infinity
+      resources:
+        requests:
+          cpu: "16"
+          memory: "32Gi"
+          nvidia.com/gpu: "1"
+        limits:
+          cpu: "16"
+          memory: "32Gi"
+          nvidia.com/gpu: "1"      
+      volumeMounts:
+        - name: dshm
+          mountPath: /dev/shm
+        - name: zihao-fast-vol  # change this based on your own pvc
+          mountPath: /zihao-fast-vol # change this based on your own pvc
+  volumes:
+    - name: dshm # shared memory, required for the multi-worker dataloader
+      emptyDir:
+        medium: Memory
+    - name: zihao-fast-vol  # change this based on your own pvc
+      persistentVolumeClaim:
+        claimName: zihao-fast-vol  # change this based on your own pvc; you can get the pvc name of your created volume from "kubectl get pvc"
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: nvidia.com/gpu.product
+                operator: In
+                values:
+                  - NVIDIA-GeForce-RTX-4090
+                  - NVIDIA-GeForce-RTX-3090
+                  # - NVIDIA-GeForce-RTX-2080-Ti
+                  - NVIDIA-RTX-A6000
+                  - NVIDIA-A10
+              - key: kubernetes.io/hostname
+                operator: NotIn 
+                values:
+                - k8s-chase-ci-07.calit2.optiputer.net
+                - ry-gpu-08.sdsc.optiputer.net
+                - k8s-3090-02.clemson.edu
