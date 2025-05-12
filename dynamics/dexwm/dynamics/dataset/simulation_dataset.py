@@ -95,8 +95,8 @@ class SimulationDataset(pyg.data.InMemoryDataset):
                     edge_index, edge_attr = connect_edges(self.config, pos_dict)
 
                     pos_curr = pos[
-                        :, seq_start : seq_start + (split_sequence_length + 1) * action_per_frame
-                    ]  # (n_objects + n_particles_hand, T, 3)
+                        :, seq_start : seq_start + (split_sequence_length + 1) * action_per_frame : action_per_frame
+                    ]  # (n_objects + n_particles_hand, sequence_length, 3)
 
                     graph_data = pyg.data.Data(
                         x=node_features,
