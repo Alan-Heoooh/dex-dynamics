@@ -1,8 +1,15 @@
+--extra-index-url https://download.pytorch.org/whl/cu121
+
+torch==2.3.1
+# torchaudio==2.3.1
+torchvision==0.18.1
+
 pytorch3d @ https://dl.fbaipublicfiles.com/pytorch3d/packaging/wheels/py310_cu121_pyt231/pytorch3d-0.7.8-cp310-cp310-linux_x86_64.whl
 
 warp-lang @ https://github.com/NVIDIA/warp/releases/download/v1.3.3/warp_lang-1.3.3+cu12-py3-none-manylinux2014_x86_64.whl
 
 # SAM2 dependency
+numpy==1.26.4
 tqdm
 hydra.core
 iopath
@@ -38,13 +45,12 @@ pyrender
 timm
 blinker==1.4  # weird system dependency on software-properties-common
 dataclasses_jsonschema
-
-torch-geometry
-torch-cluster
-sapien==3.0.0b1
-mani_skill
-dex-retargeting
-emd
+# torch-geometry==2.6.1
+# torch-cluster
+sapien==3.0.0b0
+# mani_skill
+# dex-retargeting
+# emd
 
 chumpy @ git+https://github.com/mattloper/chumpy.git@master
 manopth @ git+https://github.com/hassony2/manopth.git@master

@@ -1,10 +1,11 @@
 ARG BASE_IMAGE
-FROM ${BASE_IMAGE}
+FROM ${BASE_IMAGE:-nvidia/cuda:12.1.1-devel-ubuntu22.04}
+
 
 # Run apt-get (dkpg) without interactive dialogue
 ARG DEBIAN_FRONTEND=noninteractive
 
-ENV NVIDIA_DRIVER_CAPABILITIES all
+# ENV NVIDIA_DRIVER_CAPABILITIES alls
 
 ########################################
 # SECTION 1: Essentials                #
@@ -49,13 +50,11 @@ ARG PIP_REQ_PKG_DIR="."
 
 COPY "${PIP_REQ_PKG_DIR}/requirements.txt" /tmp
 RUN python3 -m pip install -r /tmp/requirements.txt \
+    # && python3 -m pip install \
     && rm -r /tmp/*
-    
-# RUN python3 -m pip install https://github.com/haosulab/SAPIEN/releases/download/nightly/sapien-3.0.0.dev20241003+c877626f-cp310-cp310-manylinux2014_x86_64.whl \
-RUN python3 -m pip install -U 'sapien>=3.0.0b1' 
 
 # download physx GPU binary via sapien
-RUN python3 -c "exec('import sapien.physx as physx;\ntry:\n  physx.enable_gpu()\nexcept:\n  pass;')"
+# RUN python3 -c "exec('import sapien.physx as physx;\ntry:\n  physx.enable_gpu()\nexcept:\n  pass;')"
 
 
 # ##################################################

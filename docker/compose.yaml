@@ -5,7 +5,7 @@ services:
     extends:
       file: compose_base.yaml
       service: gpu-gui
-    image: alanheoooh/dynamics:test
+    image: alanheoooh/dynamics:latest
     build:
       context: .
       args:
