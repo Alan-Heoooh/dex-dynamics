@@ -1,3 +1,4 @@
+-f https://data.pyg.org/whl/torch-2.3.1+cu121.html
 --extra-index-url https://download.pytorch.org/whl/cu121
 
 torch==2.3.1
@@ -20,6 +21,7 @@ openmim
 
 # Other dependencies
 ninja
+wandb
 ruamel.yaml
 transformations
 loguru
@@ -45,12 +47,13 @@ pyrender
 timm
 blinker==1.4  # weird system dependency on software-properties-common
 dataclasses_jsonschema
-# torch-geometry==2.6.1
-# torch-cluster
-sapien==3.0.0b0
-# mani_skill
+torch-geometric==2.6.1
+torch-cluster==1.6.3
+sapien==3.0.0b1
+mani_skill==3.0.0b20
 # dex-retargeting
-# emd
+emd
+
 
 chumpy @ git+https://github.com/mattloper/chumpy.git@master
 manopth @ git+https://github.com/hassony2/manopth.git@master

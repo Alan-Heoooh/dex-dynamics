@@ -120,7 +120,38 @@ if __name__ == "__main__":
         help="indices of GPUs to enable (default: all)",
     )
 
+    parser.add_argument(
+        "--data_dir",
+        type=str,
+        default=None,
+        help="data directory",
+    )
+
+    parser.add_argument(
+        "--exp_name",
+        type=str,
+        default=None,
+        help="experiment name",
+    )
+
+    parser.add_argument(
+        "--train_batch_size",
+        type=str,
+        default=None,
+        help="train batch size",
+    )
+
+    args = parser.parse_args()
+
     config = ConfigParser.from_dynamics_args(parser)
+
+    if args.data_dir is not None:
+        config.config["data_dir"] = args.data_dir
+    if args.exp_name is not None:
+        config.config["exp_name"] = args.exp_name  
+    if args.train_batch_size is not None:
+        config.config["train_batch_size"] = int(args.train_batch_size)
+
     save_dir = config["exp_name"]
 
     best_model_path = train(config, save_dir)
