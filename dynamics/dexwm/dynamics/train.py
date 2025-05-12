@@ -97,28 +97,9 @@ def test(config, stats, save_dir, best_model_path):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="dynamics")
     print("dynamics dir:", DYNAMICS_DIR)
-    parser.add_argument(
-        "-c",
-        "--config",
-        # default=os.path.join(DYNAMICS_DIR, "deformable_dynamics_config.yaml"),
-        default=os.path.join(DYNAMICS_DIR, "simulation_dynamics_config.yaml"),
-        type=str,
-        help="config file path (default: dynamics_config.yaml)",
-    )
-    parser.add_argument(
-        "-r",
-        "--resume",
-        default=None,
-        type=str,
-        help="path to latest checkpoint (default: None)",
-    )
-    parser.add_argument(
-        "-d",
-        "--device",
-        default="0",
-        type=str,
-        help="indices of GPUs to enable (default: all)",
-    )
+    parser.add_argument("-c", "--config", default=os.path.join(DYNAMICS_DIR, "simulation_dynamics_config.yaml"),type=str, help="config file path (default: dynamics_config.yaml)",)
+    parser.add_argument("-r", "--resume",default=None, type=str, help="path to latest checkpoint (default: None)", )
+    parser.add_argument("-d", "--device", default="0", type=str, help="indices of GPUs to enable (default: all)",)
 
     parser.add_argument(
         "--data_dir",
@@ -154,6 +135,12 @@ if __name__ == "__main__":
         default=None,
         help="number of workers",
     )
+    parser.add_argument(
+        "--action_per_frames",
+        type=str,
+        default=None,
+        help="number of actions per frame",
+    )
 
     args = parser.parse_args()
 
@@ -169,6 +156,9 @@ if __name__ == "__main__":
         config.config["log_name"] = args.log_name
     if args.num_workers is not None:
         config.config["num_workers"] = int(args.num_workers)
+    if args.action_per_frames is not None:
+        config.config["action_per_frames"] = int(args.action_per_frames)
+
 
     save_dir = config["exp_name"]
 

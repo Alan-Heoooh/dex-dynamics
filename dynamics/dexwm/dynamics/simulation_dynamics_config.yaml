@@ -50,7 +50,7 @@ history_length: 1
 train_sequence_length: 5
 test_sequence_length: 5 # 2
 predict_sequence_length: 1
-action_per_frames: 1 # 2
+action_per_frames: 4
 logging_level: INFO
 loss_type: mse # emd_cpu
 pos_loss_weight: 1
