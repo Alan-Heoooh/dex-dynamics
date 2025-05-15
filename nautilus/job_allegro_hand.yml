@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: zihao-job-allegro-hand
+  name: zihao-job-allegro-hand-softness-50
   namespace: ucsd-haosulab
 spec:
   ttlSecondsAfterFinished: 604800
@@ -16,14 +16,22 @@ spec:
           env:
             - name: WANDB_API_KEY
               value: 9ffd725b329bd38768a4bda19727d57b22e5916f
+            - name: SOFTNESS_LEVEL
+              value: "50"
           command:
             - "/bin/bash"
             - "-c"
           args:
             - |
-              cd /zihao-fast-vol/dex-dynamics/dynamics && 
+              export SOFTNESS_LEVEL=${SOFTNESS_LEVEL:-50} &&
+              cd /zihao-fast-vol/dex-dynamics/dynamics &&
               python3 -m pip install -e . &&
-              python3 dexwm/dynamics/train.py --data_dir /zihao-fast-vol/rewarped_softness_50/pinch_trajectories_allegro_hand_urdf/ --exp_name /exps/allegro_hand --log_name allegro_hand_softness_50 --train_batch_size 32  --num_workers 20
+              python3 dexwm/dynamics/train.py \
+                --data_dir /zihao-fast-vol/rewarped_softness_${SOFTNESS_LEVEL}/pinch_trajectories_allegro_hand_urdf/ \
+                --exp_name /zihao-fast-vol/exps/allegro_hand_softness_${SOFTNESS_LEVEL} \
+                --log_name allegro_hand_softness_${SOFTNESS_LEVEL}_batch_16 \
+                --train_batch_size 16 \
+                --num_workers 20
           resources:
             requests:
               cpu: "8"

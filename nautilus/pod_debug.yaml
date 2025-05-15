@@ -6,7 +6,7 @@ metadata:
 spec:
   containers:
     - name: gpu-container
-      image: nvidia/cuda:12.1.1-devel-ubuntu22.04 # docker image
+      image: alanheoooh/pod_debug:latest # docker image
       # imagePullPolicy: Always
       args: ["sleep", "infinity"]
       resources:
