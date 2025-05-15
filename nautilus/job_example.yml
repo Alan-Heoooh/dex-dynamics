@@ -13,6 +13,9 @@ spec:
       containers:
         - name: gpu-container
           image: alanheoooh/dynamics:version-0.2
+          env:
+            - name: WANDB_API_KEY
+              value: 9ffd725b329bd38768a4bda19727d57b22e5916f
           command:
             - "/bin/bash"
             - "-c"

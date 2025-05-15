@@ -23,7 +23,7 @@ spec:
             - |
               cd /zihao-fast-vol/dex-dynamics/dynamics && 
               python3 -m pip install -e . &&
-              python3 dexwm/dynamics/train.py --data_dir /zihao-fast-vol/rewarped_softness_50/pinch_trajectories_leap_hand/ --exp_name /exps/leap_hand --log_name leap_hand --train_batch_size 32  --num_workers 20
+              python3 dexwm/dynamics/train.py --data_dir /zihao-fast-vol/rewarped_softness_50/pinch_trajectories_leap_hand/ --exp_name /exps/leap_hand --log_name leap_hand_softness_50 --train_batch_size 32  --num_workers 20
           resources:
             requests:
               cpu: "8"
