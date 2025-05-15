@@ -41,7 +41,23 @@ def test(config, save_dir, model, data_module):
     # np.save(loss_array_path, model.test_losses)
     # print("test loss:", model.test_losses)
 
+HANDS = ["ability_hand", "allegro_hand", "leap_hand", "shadow_hand", "xhand"]
 
+HAND_DATA_DIR = {
+    "ability_hand": "/home/yangchen/dexwm/data/ability_hand",
+    "allegro_hand": "/home/yangchen/dexwm/data/allegro_hand",
+    "leap_hand": "/home/yangchen/dexwm/data/leap_hand",
+    "shadow_hand": "/home/yangchen/dexwm/data/shadow_hand",
+    "xhand": "/home/yangchen/dexwm/data/xhand",
+}
+
+HAND_CKPT_DIR = {
+    "ability_hand": "/home/yangchen/dexwm/dynamics/ckpt/ability_hand",
+    "allegro_hand": "/home/yangchen/dexwm/dynamics/ckpt/allegro_hand",
+    "leap_hand": "/home/yangchen/dexwm/dynamics/ckpt/leap_hand",
+    "shadow_hand": "/home/yangchen/dexwm/dynamics/ckpt/shadow_hand",
+    "xhand": "/home/yangchen/dexwm/dynamics/ckpt/xhand",
+}
 
 if __name__ == "__main__":
 
@@ -117,11 +133,18 @@ if __name__ == "__main__":
     if args.ckpt_path is not None:
         config.config["ckpt_path"] = args.ckpt_path
 
+    exps_dir = "/zihao-fast-vol/exps/cross_embodiment_test"
 
-    model = DynamicsPredictor.load_from_checkpoint(checkpoint_path=config.config["ckpt_path"])
+    for from_hand in HANDS:
+        for to_hand in HANDS:
+            config.config["data_dir"] = HAND_DATA_DIR[from_hand]
+            config.config["ckpt_path"] = os.path.join(HAND_CKPT_DIR[from_hand], "best.ckpt")
+            config.config["exp_name"] = os.path.join(exps_dir, f"cross_embodiment_test_{from_hand}_to_{to_hand}")
+            config.config["log_name"] = f"cross_embodiment_test_{from_hand}_to_{to_hand}"
 
-    data_module = SimulationDataModule(config)
+            model = DynamicsPredictor.load_from_checkpoint(checkpoint_path=config.config["ckpt_path"])
+            data_module = SimulationDataModule(config)
+        
+            save_dir = config["exp_name"]
+            test(config, save_dir, model, data_module)
 
-    save_dir = config["exp_name"]
-
-    test(config, save_dir, model, data_module)
