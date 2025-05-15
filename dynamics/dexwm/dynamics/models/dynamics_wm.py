@@ -559,26 +559,72 @@ class DynamicsPredictor(pl.LightningModule):
         )
 
     def test_step(self, batch, batch_idx):
-        B = batch.num_graphs
-        N = batch.num_nodes // B
-        S = batch.pos.shape[-2] // self.pos_len
+        # B = batch.num_graphs
+        # N = batch.num_nodes // B
+        # S = batch.pos.shape[-2] // self.pos_len
 
+        # pred_pos = None
+
+        # for i in range(S - self.his_len):
+        #     loss, pred_pos, gts = self.forward(batch, i, pred_pos, False)
+
+        #     self.total_emd_loss.update(loss["emd"].item())
+        #     self.total_chamfer_loss.update(loss["chamfer"].item())
+        #     self.total_mse_loss.update(loss["mse"].item())
+
+        #     # Log the losses
+        #     self.log_dict(
+        #         {f"{k}_{i}": v for k, v in loss.items()},
+        #         on_epoch=True,
+        #         on_step=True,
+        #         batch_size=B,
+        #     )
+
+        test_mse_loss = 0
+        test_emd_loss = 0
+        test_chamfer_loss = 0
         pred_pos = None
 
-        for i in range(S - self.his_len):
+        B = batch.num_graphs
+
+        for i in range(self.test_seq_len):
             loss, pred_pos, gts = self.forward(batch, i, pred_pos, False)
+            test_mse_loss += loss["mse"]
+            test_emd_loss += loss["emd"]
+            test_chamfer_loss += loss["chamfer"]
 
-            self.total_emd_loss.update(loss["emd"].item())
-            self.total_chamfer_loss.update(loss["chamfer"].item())
-            self.total_mse_loss.update(loss["mse"].item())
+        # normalize the loss by the sequence length
+        test_mse_loss /= self.test_seq_len
+        test_emd_loss /= self.test_seq_len
+        test_chamfer_loss /= self.test_seq_len
 
-            # Log the losses
-            self.log_dict(
-                {f"{k}_{i}": v for k, v in loss.items()},
-                on_epoch=False,
-                on_step=True,
-                batch_size=B,
-            )
+        # print(f"Validation loss: {train_pos_loss}, box losses: {box_losses}, ")
+
+        self.log(
+            "test_mse_loss",  
+            test_mse_loss,
+            prog_bar=True,
+            on_epoch=True,
+            on_step=True,
+            batch_size=batch.num_graphs,
+        )
+
+        self.log(
+            "test_emd_loss",
+            test_emd_loss,
+            prog_bar=True,
+            on_epoch=True,
+            on_step=True,
+            batch_size=batch.num_graphs,
+        )
+        self.log(
+            "test_chamfer_loss",
+            test_chamfer_loss,
+            prog_bar=True,
+            on_epoch=True,
+            on_step=True,
+            batch_size=batch.num_graphs,
+        )
 
 
     def predict_step(self, init_pos, action_samples, node_type):

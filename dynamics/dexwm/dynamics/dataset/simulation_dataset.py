@@ -2,14 +2,9 @@ import pytorch_lightning as pl
 import torch_geometric as pyg
 import os
 import torch
-from dexwm.utils.sample import furthest_point_sampling
 import numpy as np
 from .dataset import connect_edges
 from collections import OrderedDict
-
-from dexwm.utils.pcld_wrapper import HandPcldWrapper
-from dexwm.utils.geometry import generate_random_rotation
-
 
 class SimulationDataset(pyg.data.InMemoryDataset):
     def __init__(self, config, split="train", transform=None):
@@ -333,7 +328,8 @@ class SimulationDataModule(pl.LightningDataModule):
             self.train, self.val = train_set, val_set
 
         elif stage == "test":
-            raise NotImplementedError
+            test_set = SimulationDataset(self.config, "test")
+            self.test = test_set
 
         elif stage == "predict":
             self.predict = SimulationDataset(self.config, "predict")

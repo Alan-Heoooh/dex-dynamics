@@ -1,11 +1,13 @@
-log_name: all_skills
-exp_name: /home/coolbot/data/exps/all_skills
+log_name: allegro_hand_2_allegro_hand
+exp_name: exps/allegro_hand_2_allegro_hand
 
 debug: false
 test_only: false
 pretrained_path: 
 
-data_dir: "/home/coolbot/data/rewarped/pinch_trajectories_allegro_hand_urdf"
+data_dir: "/home/coolbot/data/rewarped_softness_50/pinch_trajectories_allegro_hand_urdf/"
+
+ckpt_path: "/home/coolbot/data/exps/all_skills/train_tb_logs/allegro_hand/version_0/checkpoints/epoch=154-step=94240-val_loss=0.00000.ckpt"
 
 
 # data_dir_prefix: dexycb
