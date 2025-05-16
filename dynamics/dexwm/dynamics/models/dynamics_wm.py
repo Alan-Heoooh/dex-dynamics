@@ -41,7 +41,7 @@ class DynamicsPredictor(pl.LightningModule):
         self.pos_len = 3  # vector length of position (xyz)
         self.his_len = config["history_length"]
         self.train_seq_len = config["train_sequence_length"]
-        self.test_seq_len = 5 # config["test_sequence_length"]
+        self.test_seq_len = config["test_sequence_length"]
 
         print(f"train seq len: {self.train_seq_len}, test seq len: {self.test_seq_len}")
         self.n_object_points = config["n_points"][0]

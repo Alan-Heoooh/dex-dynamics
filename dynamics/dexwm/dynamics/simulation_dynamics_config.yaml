@@ -50,7 +50,7 @@ has_rigid_motion: false
 loss_by_n_points: 1
 history_length: 1
 train_sequence_length: 5
-test_sequence_length: 5 # 2
+test_sequence_length: 10 # 5 # 2
 predict_sequence_length: 1
 action_per_frames: 4
 logging_level: INFO

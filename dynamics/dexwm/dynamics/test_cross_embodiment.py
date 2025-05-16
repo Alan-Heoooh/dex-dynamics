@@ -146,7 +146,7 @@ if __name__ == "__main__":
             loss_dict[f"{from_hand}_to_{to_hand}"] = losses
 
     # Save the loss_dict to a file
-    loss_dict_path = os.path.join(exps_dir, "cross_embodiment_test_loss_dict.npy")
+    loss_dict_path = os.path.join(exps_dir, "cross_embodiment_test_loss_dict_sequence_length_10.npy")
     np.save(loss_dict_path, loss_dict)
     print("Cross-embodiment test loss dict saved to:", loss_dict_path)
 
