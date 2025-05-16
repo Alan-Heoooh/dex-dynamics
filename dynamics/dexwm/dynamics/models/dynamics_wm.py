@@ -418,7 +418,7 @@ class DynamicsPredictor(pl.LightningModule):
                         self.wis3d_train.add_point_cloud(
                             gts.view(B, -1, 3)[vis_idx][: self.config["particles_per_obj"]],
                             torch.tensor([[0, 0, 255]]).repeat(
-                                self.lossconfig["particles_per_obj"], 1
+                                self.config["particles_per_obj"], 1
                             ),
                             name="gt_obj_pos",
                         )
