@@ -43,7 +43,7 @@ class DynamicsPredictor(pl.LightningModule):
         self.train_seq_len = config["train_sequence_length"]
         self.test_seq_len = config["test_sequence_length"]
 
-        print(f"train seq len: {self.train_seq_len}, test seq len: {self.test_seq_len}")
+        # print(f"train seq len: {self.train_seq_len}, test seq len: {self.test_seq_len}")s
         self.n_object_points = config["n_points"][0]
         self.N = sum(config["n_points"])  # total number of points
         self.lr = config["optimizer"]["lr"]
@@ -565,6 +565,7 @@ class DynamicsPredictor(pl.LightningModule):
         test_mse_loss = 0
         test_emd_loss = 0
         test_chamfer_loss = 0
+        test_rmse_loss = 0
         pred_pos = None
 
         B = batch.num_graphs
@@ -574,7 +575,7 @@ class DynamicsPredictor(pl.LightningModule):
             test_mse_loss += loss["mse"]
             test_emd_loss += loss["emd"]
             test_chamfer_loss += loss["chamfer"]
-            test_rmse_loss = loss["rmse"]
+            test_rmse_loss += loss["rmse"]
 
         # normalize the loss by the sequence length
         test_mse_loss /= self.test_seq_len

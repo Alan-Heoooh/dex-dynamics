@@ -7,8 +7,7 @@ pretrained_path:
 
 data_dir: "/home/coolbot/data/rewarped_softness_50/pinch_trajectories_allegro_hand_urdf/"
 
-ckpt_path: "/home/coolbot/data/exps/all_skills/train_tb_logs/allegro_hand/version_0/checkpoints/epoch=154-step=94240-val_loss=0.00000.ckpt"
-
+ckpt_path: 
 
 # data_dir_prefix: dexycb
 rebuild_dataset: true
@@ -38,6 +37,7 @@ connectivity_radius_inner: 0.025 # 0.025
 use_knn_outer: false
 k_neighbors_outer: 2
 connectivity_radius_outer: 0.04 # 0.025
+
 # filter edges by distance
 filter_edges_by_distance_inner: false
 filter_edges_by_distance_outer: false

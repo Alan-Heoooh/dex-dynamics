@@ -45,11 +45,11 @@ HAND_DATA_DIR = {
 }
 
 HAND_CKPT_DIR = {
-    "ability_hand": "/zihao-fast-vol/ckpts/ability_hand-epoch=54-step=11165-val_loss=0.00001.ckpt",
-    "allegro_hand": "/zihao-fast-vol/ckpts/allegro_hand-epoch=67-step=13804-val_loss=0.00001.ckpt",
-    "leap_hand": "/zihao-fast-vol/ckpts/leap_hand-epoch=65-step=13398-val_loss=0.00001.ckpt",
-    "shadow_hand": "/zihao-fast-vol/ckpts/shadow_hand-epoch=66-step=13601-val_loss=0.00001.ckpt",
-    "xhand": "/zihao-fast-vol/ckpts/xhand_epoch=62-step=12789-val_loss=0.00001.ckpt",
+    "ability_hand": "/zihao-fast-vol/exps/ability_hand_softness_50/train_tb_logs/ability_hand_softness_50_batch_16/version_0/checkpoints/epoch=179-step=36540-val_loss=0.00000.ckpt",
+    "allegro_hand": "/zihao-fast-vol/exps/allegro_hand_softness_50/train_tb_logs/allegro_hand_softness_50_batch_16/version_0/checkpoints/epoch=199-step=40600-val_loss=0.00001.ckpt",
+    "leap_hand": "/zihao-fast-vol/exps/leap_hand_softness_50/train_tb_logs/leap_hand_softness_50_batch_16/version_0/checkpoints/epoch=195-step=39788-val_loss=0.00001.ckpt",
+    "shadow_hand": "/zihao-fast-vol/exps/shadow_hand_softness_50/train_tb_logs/shadow_hand_softness_50_batch_16/version_0/checkpoints/epoch=199-step=40600-val_loss=0.00000.ckpt",
+    "xhand": "/zihao-fast-vol/exps/xhand_softness_50/train_tb_logs/xhand_softness_50_batch_16/version_0/checkpoints/epoch=145-step=29638-val_loss=0.00000.ckpt",
 }
 
 if __name__ == "__main__":
