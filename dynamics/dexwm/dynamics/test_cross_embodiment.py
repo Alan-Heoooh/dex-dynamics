@@ -20,43 +20,36 @@ from dynamics.dataset import DeformableDataModule, SimulationDataModule
 
 def test(config, save_dir, model, data_module):
 
-    if not config["debug"]:
-        wandb_logger = WandbLogger(project="dexwm-cross-embodiment-test", name=config['log_name'])
-        logger = [wandb_logger]
-    else:
-        logger = []
-
     trainer = pl.Trainer(
         accelerator="gpu",
         devices=[config.device.index] if config.device.index is not None else 1,
         default_root_dir=save_dir,
         log_every_n_steps=1,
-        logger=logger,
+        # logger=logger,
         num_sanity_val_steps=0,
         deterministic=True,
     )
 
-    trainer.test(model, data_module)
+    losses = trainer.test(model, data_module)
 
-    # np.save(loss_array_path, model.test_losses)
-    # print("test loss:", model.test_losses)
+    return losses[0] # 1 epoch
 
 HANDS = ["ability_hand", "allegro_hand", "leap_hand", "shadow_hand", "xhand"]
 
 HAND_DATA_DIR = {
-    "ability_hand": "/home/yangchen/dexwm/data/ability_hand",
-    "allegro_hand": "/home/yangchen/dexwm/data/allegro_hand",
-    "leap_hand": "/home/yangchen/dexwm/data/leap_hand",
-    "shadow_hand": "/home/yangchen/dexwm/data/shadow_hand",
-    "xhand": "/home/yangchen/dexwm/data/xhand",
+    "ability_hand": "/zihao-fast-vol/rewarped_softness_50/pinch_trajectories_ability_hand_urdf",
+    "allegro_hand": "/zihao-fast-vol/rewarped_softness_50/pinch_trajectories_allegro_hand_urdf",
+    "leap_hand": "/zihao-fast-vol/rewarped_softness_50/pinch_trajectories_leap_hand",
+    "shadow_hand": "/zihao-fast-vol/rewarped_softness_50/pinch_trajectories_shadow_urdf",
+    "xhand": "/zihao-fast-vol/rewarped_softness_50/pinch_trajectories_xhand_urdf",
 }
 
 HAND_CKPT_DIR = {
-    "ability_hand": "/home/yangchen/dexwm/dynamics/ckpt/ability_hand",
-    "allegro_hand": "/home/yangchen/dexwm/dynamics/ckpt/allegro_hand",
-    "leap_hand": "/home/yangchen/dexwm/dynamics/ckpt/leap_hand",
-    "shadow_hand": "/home/yangchen/dexwm/dynamics/ckpt/shadow_hand",
-    "xhand": "/home/yangchen/dexwm/dynamics/ckpt/xhand",
+    "ability_hand": "/zihao-fast-vol/ckpts/ability_hand-epoch=54-step=11165-val_loss=0.00001.ckpt",
+    "allegro_hand": "/zihao-fast-vol/ckpts/allegro_hand-epoch=67-step=13804-val_loss=0.00001.ckpt",
+    "leap_hand": "/zihao-fast-vol/ckpts/leap_hand-epoch=65-step=13398-val_loss=0.00001.ckpt",
+    "shadow_hand": "/zihao-fast-vol/ckpts/shadow_hand-epoch=66-step=13601-val_loss=0.00001.ckpt",
+    "xhand": "/zihao-fast-vol/ckpts/xhand_epoch=62-step=12789-val_loss=0.00001.ckpt",
 }
 
 if __name__ == "__main__":
@@ -135,10 +128,13 @@ if __name__ == "__main__":
 
     exps_dir = "/zihao-fast-vol/exps/cross_embodiment_test"
 
+    loss_dict = {}
+
     for from_hand in HANDS:
         for to_hand in HANDS:
-            config.config["data_dir"] = HAND_DATA_DIR[from_hand]
-            config.config["ckpt_path"] = os.path.join(HAND_CKPT_DIR[from_hand], "best.ckpt")
+            print(f"Testing Cross-embodiment of dynamics model from {from_hand} to {to_hand}...")
+            config.config["ckpt_path"] = HAND_CKPT_DIR[from_hand]
+            config.config["data_dir"] = HAND_DATA_DIR[to_hand]
             config.config["exp_name"] = os.path.join(exps_dir, f"cross_embodiment_test_{from_hand}_to_{to_hand}")
             config.config["log_name"] = f"cross_embodiment_test_{from_hand}_to_{to_hand}"
 
@@ -146,5 +142,11 @@ if __name__ == "__main__":
             data_module = SimulationDataModule(config)
         
             save_dir = config["exp_name"]
-            test(config, save_dir, model, data_module)
+            losses = test(config, save_dir, model, data_module)
+            loss_dict[f"{from_hand}_to_{to_hand}"] = losses
+
+    # Save the loss_dict to a file
+    loss_dict_path = os.path.join(exps_dir, "cross_embodiment_test_loss_dict.npy")
+    np.save(loss_dict_path, loss_dict)
+    print("Cross-embodiment test loss dict saved to:", loss_dict_path)
 

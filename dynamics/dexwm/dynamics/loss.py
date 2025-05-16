@@ -31,6 +31,7 @@ class PositionLoss(torch.nn.Module):
         self.emd_cpu = EMDCPU()
         self.emd_cuda = EMDCPU()  # EMDCUDA()
         self.mse = MSE()
+        self.rmse = RMSE()
         
         print(f"loss type {loss_type} instantiated, with object losses weighted {object_weights}")
 
@@ -66,7 +67,8 @@ class PositionLoss(torch.nn.Module):
             # compute loss for each object
             if self.loss_type == "mse":
                 object_loss = self.mse(x, y)
-                
+            elif self.loss_type == "rmse":
+                object_loss = self.rmse(x, y)
             elif self.loss_type == "chamfer":
                 object_loss = self.chamfer(x, y)
             elif self.loss_type == "emd_cpu":
@@ -313,3 +315,10 @@ class MSE:
         mse_pos = F.mse_loss(x, y)
 
         return mse_pos
+
+class RMSE:
+    def __call__(self, x, y):
+        mse = F.mse_loss(x, y)
+        rmse = torch.sqrt(mse)
+
+        return rmse

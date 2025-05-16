@@ -41,7 +41,9 @@ class DynamicsPredictor(pl.LightningModule):
         self.pos_len = 3  # vector length of position (xyz)
         self.his_len = config["history_length"]
         self.train_seq_len = config["train_sequence_length"]
-        self.test_seq_len = config["test_sequence_length"]
+        self.test_seq_len = 5 # config["test_sequence_length"]
+
+        print(f"train seq len: {self.train_seq_len}, test seq len: {self.test_seq_len}")
         self.n_object_points = config["n_points"][0]
         self.N = sum(config["n_points"])  # total number of points
         self.lr = config["optimizer"]["lr"]
@@ -256,6 +258,7 @@ class DynamicsPredictor(pl.LightningModule):
             loss["chamfer"] = self.chamfer_loss(pred_pos, gt_pos)
             loss["emd"] = self.emd_loss(pred_pos, gt_pos)
             loss["mse"] = self.mse_loss(pred_pos, gt_pos)
+            loss["rmse"] = torch.sqrt(loss["mse"])
 
         return loss, pred_pos, gt_pos
 
@@ -415,7 +418,7 @@ class DynamicsPredictor(pl.LightningModule):
                         self.wis3d_train.add_point_cloud(
                             gts.view(B, -1, 3)[vis_idx][: self.config["particles_per_obj"]],
                             torch.tensor([[0, 0, 255]]).repeat(
-                                self.config["particles_per_obj"], 1
+                                self.lossconfig["particles_per_obj"], 1
                             ),
                             name="gt_obj_pos",
                         )
@@ -559,27 +562,6 @@ class DynamicsPredictor(pl.LightningModule):
         )
 
     def test_step(self, batch, batch_idx):
-        # B = batch.num_graphs
-        # N = batch.num_nodes // B
-        # S = batch.pos.shape[-2] // self.pos_len
-
-        # pred_pos = None
-
-        # for i in range(S - self.his_len):
-        #     loss, pred_pos, gts = self.forward(batch, i, pred_pos, False)
-
-        #     self.total_emd_loss.update(loss["emd"].item())
-        #     self.total_chamfer_loss.update(loss["chamfer"].item())
-        #     self.total_mse_loss.update(loss["mse"].item())
-
-        #     # Log the losses
-        #     self.log_dict(
-        #         {f"{k}_{i}": v for k, v in loss.items()},
-        #         on_epoch=True,
-        #         on_step=True,
-        #         batch_size=B,
-        #     )
-
         test_mse_loss = 0
         test_emd_loss = 0
         test_chamfer_loss = 0
@@ -592,13 +574,14 @@ class DynamicsPredictor(pl.LightningModule):
             test_mse_loss += loss["mse"]
             test_emd_loss += loss["emd"]
             test_chamfer_loss += loss["chamfer"]
+            test_rmse_loss = loss["rmse"]
 
         # normalize the loss by the sequence length
         test_mse_loss /= self.test_seq_len
         test_emd_loss /= self.test_seq_len
         test_chamfer_loss /= self.test_seq_len
+        test_rmse_loss /= self.test_seq_len
 
-        # print(f"Validation loss: {train_pos_loss}, box losses: {box_losses}, ")
 
         self.log(
             "test_mse_loss",  
@@ -625,6 +608,17 @@ class DynamicsPredictor(pl.LightningModule):
             on_step=True,
             batch_size=batch.num_graphs,
         )
+
+        self.log(
+            "test_rmse_loss",
+            test_rmse_loss,
+            prog_bar=True,
+            on_epoch=True,
+            on_step=True,
+            batch_size=batch.num_graphs,
+        )
+
+        return test_mse_loss, test_emd_loss, test_chamfer_loss, test_rmse_loss
 
 
     def predict_step(self, init_pos, action_samples, node_type):
